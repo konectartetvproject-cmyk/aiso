@@ -1,0 +1,6 @@
+{
+  "name": "Oratoria",
+  "description": "App para aprender oratoria con ejercicios y feedback por IA",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

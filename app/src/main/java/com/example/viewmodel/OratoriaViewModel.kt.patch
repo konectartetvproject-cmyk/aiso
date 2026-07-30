@@ -1,0 +1,98 @@
+--- app/src/main/java/com/example/viewmodel/OratoriaViewModel.kt
++++ app/src/main/java/com/example/viewmodel/OratoriaViewModel.kt
+@@ -10,6 +10,7 @@
+ import com.example.model.aisoLessons
+ import com.example.model.sampleExercises
+ import com.example.model.techniquesList
++import org.json.JSONObject
+ import kotlinx.coroutines.flow.MutableStateFlow
+ import kotlinx.coroutines.flow.StateFlow
+ import kotlinx.coroutines.flow.asStateFlow
+@@ -137,6 +138,59 @@
+         }
+     }
+ 
++    fun evaluateTechniquePracticeWithAudio(audioBytes: ByteArray, textFallback: String? = null) {
++        _isEvaluatingTechnique.value = true
++        _aiFeedback.value = null
++        _voiceMetrics.value = null
++
++        viewModelScope.launch {
++            try {
++                val apiKey = BuildConfig.GEMINI_API_KEY
++                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
++                    _aiFeedback.value = "Por favor, configura tu API Key de Gemini en la pestaña de Secrets."
++                    return@launch
++                }
++
++                val technique = _currentTechnique.value ?: return@launch
++                val formulaString = technique.formula.joinToString("\n") { "- $it" }
++                
++                val prompt = """
++                    Eres el Tutor Inteligente Oficial de la Academia, experto en análisis de oratoria.
++                    El usuario está practicando la Técnica de ${technique.type}: "${technique.name}".
++                    FÓRMULA EXACTA DE LA TÉCNICA:
++                    $formulaString
++                    INSTRUCCIÓN DE EVALUACIÓN MULTIMODAL:
++                    Acabas de recibir un archivo de audio con la respuesta hablada del usuario.
++                    1. Transcribe brevemente el contenido de su respuesta.
++                    2. Evalúa si el usuario cumplió con la FÓRMULA EXACTA de la técnica.
++                    3. Evalúa el AUDIO: la claridad de la voz, la velocidad/ritmo (pace), y el tono (sentiment/positividad).
++                    4. Proporciona retroalimentación constructiva.
++                    Al final de tu respuesta, DEBES incluir OBLIGATORIAMENTE un bloque JSON con las métricas de voz del 0.0 al 1.0 (donde 1.0 es excelente), con el siguiente formato exacto:
++                    ```json
++                    {
++                      "pace": 0.85,
++                      "clarity": 0.90,
++                      "sentiment": 0.88
++                    }
++                    ```
++                """.trimIndent()
++                
++                val base64Audio = android.util.Base64.encodeToString(audioBytes, android.util.Base64.NO_WRAP)
++                
++                val request = GenerateContentRequest(
++                    contents = listOf(
++                        Content(parts = listOf(
++                            Part(text = prompt),
++                            Part(inlineData = com.example.api.InlineData(mimeType = "audio/mp4", data = base64Audio))
++                        ))
++                    )
++                )
++
++                val response = RetrofitClient.service.generateContent(apiKey, request)
++                var aiText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "No pude evaluar la respuesta. Intenta de nuevo."
++                
++                var pace = 0.8f
++                var clarity = 0.8f
++                var sentiment = 0.8f
++                
++                val jsonRegex = Regex("```json\\s*(\\{[\\s\\S]*?\\})\\s*```")
++                val match = jsonRegex.find(aiText)
++                if (match != null) {
++                    val jsonStr = match.groupValues[1]
++                    try {
++                        val jsonObject = JSONObject(jsonStr)
++                        pace = jsonObject.optDouble("pace", 0.8).toFloat()
++                        clarity = jsonObject.optDouble("clarity", 0.8).toFloat()
++                        sentiment = jsonObject.optDouble("sentiment", 0.8).toFloat()
++                        aiText = aiText.replace(match.value, "").trim()
++                    } catch (e: Exception) {
++                        e.printStackTrace()
++                    }
++                }
++                
++                _aiFeedback.value = aiText
++                _voiceMetrics.value = VoiceMetrics(pace = pace, clarity = clarity, sentiment = sentiment)
++
++            } catch (e: Exception) {
++                _aiFeedback.value = "Error al conectar con la IA: ${e.message}"
++            } finally {
++                _isEvaluatingTechnique.value = false
++            }
++        }
++    }
++
+     fun completeCurrentTechnique() {
+         _currentTechnique.value?.let { technique ->
+             val currentProgress = _userProgress.value

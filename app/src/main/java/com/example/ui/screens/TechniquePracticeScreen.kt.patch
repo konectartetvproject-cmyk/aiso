@@ -1,0 +1,116 @@
+--- app/src/main/java/com/example/ui/screens/TechniquePracticeScreen.kt
++++ app/src/main/java/com/example/ui/screens/TechniquePracticeScreen.kt
+@@ -10,12 +10,15 @@
+ import androidx.compose.foundation.verticalScroll
+ import androidx.compose.foundation.shape.RoundedCornerShape
+ import androidx.compose.material.icons.Icons
+ import androidx.compose.material.icons.filled.Check
+ import androidx.compose.material.icons.filled.Mic
++import androidx.compose.material.icons.filled.Stop
+ import androidx.compose.material.icons.automirrored.filled.ArrowBack
+ import androidx.compose.material3.*
+ import androidx.compose.runtime.*
+ import androidx.compose.ui.Alignment
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.draw.clip
++import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.text.font.FontWeight
+ import androidx.compose.ui.unit.dp
+ import com.example.model.Technique
+@@ -34,6 +37,7 @@
+     aiFeedback: String?,
+     voiceMetrics: com.example.viewmodel.VoiceMetrics?,
+     onEvaluate: (String) -> Unit,
++    onEvaluateWithAudio: (ByteArray) -> Unit,
+     onComplete: () -> Unit,
+     onBack: () -> Unit
+ ) {
+@@ -41,18 +45,10 @@
+     var userInput by remember { mutableStateOf("") }
+     
+-    val speechRecognizerLauncher = rememberLauncherForActivityResult(
+-        contract = ActivityResultContracts.StartActivityForResult()
+-    ) { result ->
+-        if (result.resultCode == Activity.RESULT_OK) {
+-            val data = result.data
+-            val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+-            val spokenText = results?.get(0)
+-            if (spokenText != null) {
+-                userInput = if (userInput.isNotEmpty()) "$userInput $spokenText" else spokenText
+-            }
+-        }
+-    }
++    val context = LocalContext.current
++    val audioRecorder = remember { com.example.util.AudioRecorderHelper(context) }
++    var isRecording by remember { mutableStateOf(false) }
++    var recordedAudioBytes by remember { mutableStateOf<ByteArray?>(null) }
+ 
+     // When feedback arrives, move to FEEDBACK step
+     LaunchedEffect(aiFeedback) {
+@@ -95,7 +91,14 @@
+                         PracticeStep.CHALLENGE -> {
+                             Button(
+-                                onClick = { onEvaluate(userInput) },
++                                onClick = {
++                                    if (recordedAudioBytes != null) {
++                                        onEvaluateWithAudio(recordedAudioBytes!!)
++                                    } else {
++                                        onEvaluate(userInput)
++                                    }
++                                },
+                                 modifier = Modifier.fillMaxWidth(),
+-                                enabled = userInput.isNotBlank() && !isEvaluating
++                                enabled = (userInput.isNotBlank() || recordedAudioBytes != null) && !isEvaluating
+                             ) {
+                                 if (isEvaluating) {
+                                     CircularProgressIndicator(
+@@ -211,18 +214,35 @@
+                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                 ),
+-                                trailingIcon = {
+-                                    IconButton(onClick = {
+-                                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+-                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+-                                        }
+-                                        try {
+-                                            speechRecognizerLauncher.launch(intent)
+-                                        } catch (e: Exception) {
+-                                            // Fallback
+-                                        }
+-                                    }) {
+-                                        Icon(Icons.Default.Mic, contentDescription = "Dictar por voz", tint = MaterialTheme.colorScheme.primary)
+-                                    }
+-                                }
+                             )
++                            
++                            Spacer(modifier = Modifier.height(16.dp))
++                            Row(
++                                modifier = Modifier.fillMaxWidth(),
++                                horizontalArrangement = Arrangement.Center,
++                                verticalAlignment = Alignment.CenterVertically
++                            ) {
++                                FloatingActionButton(
++                                    onClick = {
++                                        if (isRecording) {
++                                            recordedAudioBytes = audioRecorder.stopRecording()
++                                            isRecording = false
++                                        } else {
++                                            audioRecorder.startRecording()
++                                            isRecording = true
++                                        }
++                                    },
++                                    containerColor = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
++                                ) {
++                                    Icon(
++                                        if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
++                                        contentDescription = if (isRecording) "Detener Grabación" else "Grabar Audio",
++                                        tint = MaterialTheme.colorScheme.onPrimary
++                                    )
++                                }
++                            }
++                            if (recordedAudioBytes != null && !isRecording) {
++                                Text("Audio grabado listo para evaluar.", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
++                            }
+                         }
+                         PracticeStep.FEEDBACK -> {
