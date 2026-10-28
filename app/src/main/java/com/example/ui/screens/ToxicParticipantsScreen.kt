@@ -255,7 +255,6 @@ fun ToxicParticipantsScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
-
             if (participantIndex < toxicParticipantsList.size) {
                 val participant = toxicParticipantsList[participantIndex]
                 
@@ -267,7 +266,6 @@ fun ToxicParticipantsScreen(onBack: () -> Unit) {
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))
-
                 if (scenarioIndex == -1) {
                     Text(
                         text = participant.name,
@@ -307,9 +305,7 @@ fun ToxicParticipantsScreen(onBack: () -> Unit) {
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
-
                     question.options.forEachIndexed { index, option ->
                         val isSelected = selectedOption == index
                         val isCorrect = index == question.correctAnswerIndex
@@ -328,7 +324,6 @@ fun ToxicParticipantsScreen(onBack: () -> Unit) {
                             isSelected -> MaterialTheme.colorScheme.primary
                             else -> androidx.compose.ui.graphics.Color.Transparent
                         }
-
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()

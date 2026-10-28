@@ -91,7 +91,6 @@ val techniquesList = listOf(
         formula = listOf("Saludo", "Uso de varias técnicas de inicio", "Nombre del orador", "Nombre del tema"),
         example = "**Buenas noches.** **¿Se han preguntado qué pasaría si superaran sus miedos? [Interrogación] Hace unos años mi mayor miedo era hablar en público... [Experiencia]** Mi nombre es **[Tu Nombre]** y hoy les hablaré sobre **cómo convertir el miedo en poder**."
     ),
-
     // TÉCNICAS DE CONCLUSIÓN
     Technique(
         id = "conclusion_1",
@@ -165,7 +164,6 @@ val techniquesList = listOf(
         formula = listOf("Anunciar la conclusión", "Combinar varias técnicas de conclusión", "Agradecer al público"),
         example = "**Para finalizar, (Énfasis + Historia personal) recuerden que la clave está en enfoque, disciplina y perseverancia. Cuando yo era joven aprendí que eran la clave.** **Gracias a todos.**"
     ),
-
     // LOS 11 PASOS
     Technique(
         id = "pasos_11",

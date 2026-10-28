@@ -139,7 +139,6 @@ fun OratoryDefenseScreen(
                         .padding(paddingValues)
                         .background(Color(0xFFE8F5E9))
                 ) {
-                // Top Bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -149,7 +148,7 @@ fun OratoryDefenseScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Confianza: ${state.confidence} ☀️",
+                        text = "Confianza: ${state.confidence} 💡",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFF57F17)
@@ -161,7 +160,6 @@ fun OratoryDefenseScreen(
                     )
                 }
 
-                // Plant Selection
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
                     modifier = Modifier
@@ -236,13 +234,12 @@ fun OratoryDefenseScreen(
                             ) {
                                 Text(type.icon, fontSize = 24.sp)
                                 Text(type.title, fontSize = 10.sp, maxLines = 1)
-                                Text("${type.cost}☀️", fontSize = 10.sp, color = Color(0xFFF57F17), fontWeight = FontWeight.Bold)
+                                Text("${type.cost} 💡", fontSize = 10.sp, color = Color(0xFFF57F17), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
 
-                // Game Board
                 val collectedDrops = remember { mutableStateListOf<Int>() }
                 val currentDrops by rememberUpdatedState(state.confidenceDrops)
                 
@@ -330,7 +327,7 @@ fun OratoryDefenseScreen(
                                         .size(colWidth, rowHeight),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("🎤", fontSize = 32.sp)
+                                    Text("🚜", fontSize = 32.sp)
                                 }
                             }
                         }
@@ -370,7 +367,7 @@ fun OratoryDefenseScreen(
                                     .clickable { viewModel.collectConfidence(drop.id) },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("☀️", fontSize = 24.sp)
+                                Text("💡", fontSize = 24.sp)
                             }
                         }
                     }
@@ -392,5 +389,4 @@ fun OratoryDefenseScreen(
         }
     }
 }
-
 }

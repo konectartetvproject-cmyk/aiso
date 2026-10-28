@@ -34,11 +34,14 @@ import androidx.compose.ui.unit.dp
 import com.example.model.Lesson
 import com.example.viewmodel.OratoriaViewModel
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseScreen(
     viewModel: OratoriaViewModel,
-    onNavigateToQuiz: () -> Unit
+    onNavigateToQuiz: () -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
     val lessons by viewModel.lessons.collectAsState()
     val completedLessons by viewModel.completedLessons.collectAsState()
@@ -46,7 +49,17 @@ fun CourseScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quiz", fontWeight = FontWeight.Bold) },
+                title = { Text("Ruta de Aprendizaje y Quiz", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Volver"
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -142,7 +155,9 @@ fun LessonNode(lesson: Lesson, isLocked: Boolean, onClick: () -> Unit, modifier:
                 modifier = Modifier.size(40.dp)
             )
         }
+
         Spacer(modifier = Modifier.height(8.dp))
+
         Text(
             text = lesson.title,
             style = MaterialTheme.typography.titleMedium,

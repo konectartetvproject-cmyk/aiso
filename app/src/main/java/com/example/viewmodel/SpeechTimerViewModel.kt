@@ -18,8 +18,7 @@ enum class SpeechPhase {
 }
 
 class SpeechTimerViewModel : ViewModel() {
-
-    private val _totalTimeMinutes = MutableStateFlow(15) // Default 15 minutes
+    private val _totalTimeMinutes = MutableStateFlow(15)
     val totalTimeMinutes: StateFlow<Int> = _totalTimeMinutes.asStateFlow()
 
     private val _remainingTimeSeconds = MutableStateFlow(15 * 60)
@@ -97,10 +96,8 @@ class SpeechTimerViewModel : ViewModel() {
     private fun updatePhaseAndHints() {
         val totalSec = _totalTimeMinutes.value * 60
         val remainSec = _remainingTimeSeconds.value
-
         val elapsedSec = totalSec - remainSec
 
-        // Phases: Intro = first 1 min, Conclusion = last 1 min
         val introDuration = 60
         val conclusionDuration = 60
 
@@ -113,7 +110,7 @@ class SpeechTimerViewModel : ViewModel() {
                 _currentPhase.value = SpeechPhase.CONCLUSION
                 if (remainSec == conclusionDuration) {
                     _currentHint.value = "Es hora de concluir tu discurso."
-                } else if (remainSec % 20 == 0) { // Every 20s in conclusion
+                } else if (remainSec % 20 == 0) {
                     _currentHint.value = "Resume los puntos clave."
                 }
             }
@@ -125,14 +122,10 @@ class SpeechTimerViewModel : ViewModel() {
             }
             else -> {
                 _currentPhase.value = SpeechPhase.DEVELOPMENT
-                // Every 2 minutes (120 seconds) show a new hint, stay for 30 seconds
                 val timeInDev = elapsedSec - introDuration
-                if (timeInDev % 60 == 0) { // Change hint every minute
+                if (timeInDev % 60 == 0) {
                     _currentHint.value = hints.random()
                 } else if (timeInDev % 60 > 15) {
-                    // Hide hint after 15 seconds
-                    // _currentHint.value = null
-                    // Or we can just leave it visible. Let's keep it visible for 15s then clear.
                     _currentHint.value = null
                 }
             }

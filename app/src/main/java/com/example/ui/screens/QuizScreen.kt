@@ -44,8 +44,8 @@ fun QuizScreen(
             TopAppBar(
                 title = {
                     LinearProgressIndicator(
-                        progress = { 
-                           if (isQuizFinished) 1f else currentQuestionIndex.toFloat() / totalQuestions.toFloat()
+                        progress = {
+                            if (isQuizFinished) 1f else currentQuestionIndex.toFloat() / totalQuestions.toFloat()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -90,7 +90,6 @@ fun QuizScreen(
                                 modifier = Modifier.padding(bottom = 16.dp)
                             )
                         }
-
                         Button(
                             onClick = {
                                 if (isAnswerChecked) {
@@ -181,7 +180,6 @@ fun QuizScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(bottom = 32.dp)
                     )
-
                     question.options.forEachIndexed { index, optionText ->
                         val isSelected = selectedOptionIndex == index
                         val isCorrectAnswer = index == question.correctAnswerIndex

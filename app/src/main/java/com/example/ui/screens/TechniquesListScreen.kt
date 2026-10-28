@@ -51,11 +51,11 @@ import com.example.model.Technique
 import com.example.model.techniquesList
 import com.example.viewmodel.OratoriaViewModel
 import com.example.model.Lesson
-
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.viewmodel.DailyChallengeViewModel
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,8 +67,34 @@ fun TechniquesListScreen(
     onAnecdotesClick: () -> Unit,
     onQuotesClick: () -> Unit,
     onNavigateToQuiz: () -> Unit,
-    onNavigateToRoute: (String) -> Unit
+    onNavigateToRoute: (String) -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
+    val currentTechnique by viewModel.currentTechnique.collectAsState()
+    val isEvaluating by viewModel.isEvaluatingTechnique.collectAsState()
+    val aiFeedback by viewModel.aiFeedback.collectAsState()
+    val voiceMetrics by viewModel.voiceMetrics.collectAsState()
+
+    if (currentTechnique != null) {
+        androidx.activity.compose.BackHandler {
+            viewModel.clearTechnique()
+        }
+        TechniquePracticeScreen(
+            technique = currentTechnique!!,
+            isEvaluating = isEvaluating,
+            aiFeedback = aiFeedback,
+            voiceMetrics = voiceMetrics,
+            onEvaluate = { text -> viewModel.evaluateTechniquePractice(text) },
+            onEvaluateWithAudio = { bytes -> viewModel.evaluateTechniquePracticeWithAudio(bytes) },
+            onComplete = {
+                viewModel.completeCurrentTechnique()
+                viewModel.clearTechnique()
+            },
+            onBack = { viewModel.clearTechnique() }
+        )
+        return
+    }
+
     fun getTechniqueColorAndIcon(id: String): Pair<Color, ImageVector> {
         return when (id) {
             "inicio_1" -> Pair(Color(0xFFE53935), Icons.Default.QuestionMark)
@@ -91,6 +117,7 @@ fun TechniquesListScreen(
             else -> Pair(Color(0xFF757575), Icons.Default.AutoFixHigh)
         }
     }
+
     val completedTechniques by viewModel.completedTechniques.collectAsState()
     val lessons by viewModel.lessons.collectAsState()
     val completedLessons by viewModel.completedLessons.collectAsState()
@@ -102,6 +129,16 @@ fun TechniquesListScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Taller de Oratoria", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Volver al inicio"
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -232,7 +269,10 @@ fun TechniquesListScreen(
                                 isCompleted = isCompleted,
                                 customColor = color,
                                 customIcon = icon,
-                                onClick = { onTechniqueClick(technique) },
+                                onClick = {
+                                    viewModel.startTechniquePractice(technique)
+                                    onTechniqueClick(technique)
+                                },
                                 modifier = Modifier.width(110.dp)
                             )
                         }
@@ -289,7 +329,6 @@ fun TechniquesListScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.clickable(onClick = onAnecdotesClick).width(110.dp)
@@ -370,7 +409,6 @@ fun TechniquesListScreen(
                     }
                 }
             }
-
             item { Spacer(modifier = Modifier.height(32.dp)) }
         }
     }
@@ -399,7 +437,6 @@ fun TechniqueNode(
             isLocked -> Icons.Default.Lock
             else -> customIcon
         }
-
         Box(
             modifier = Modifier
                 .size(80.dp)

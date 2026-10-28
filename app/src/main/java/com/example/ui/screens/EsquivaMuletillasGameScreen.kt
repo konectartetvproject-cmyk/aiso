@@ -29,7 +29,6 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
 import android.speech.tts.TextToSpeech
-import android.media.AudioManager
 import android.view.SoundEffectConstants
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -65,10 +64,8 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
     DisposableEffect(context) {
         val ttsInstance = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                // Initialize TTS
             }
         }
-        // Set language to Spanish since filler words are in Spanish
         ttsInstance.language = Locale("es", "ES")
         tts = ttsInstance
         onDispose {
@@ -92,13 +89,11 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
         Color(0xFFE91E63), Color(0xFF9C27B0), Color(0xFF3F51B5), 
         Color(0xFF00BCD4), Color(0xFF9C27B0), Color(0xFF4CAF50), Color(0xFFF44336)
     )
-
     var bubbleIdCounter by remember { mutableIntStateOf(0) }
     
     var screenWidth by remember { mutableFloatStateOf(0f) }
     var screenHeight by remember { mutableFloatStateOf(0f) }
 
-    // Game Loop
     LaunchedEffect(isPlaying, isGameOver) {
         if (isPlaying && !isGameOver) {
             var lastSpawnTime = System.currentTimeMillis()
@@ -107,9 +102,8 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
             while (isActive) {
                 val currentTime = System.currentTimeMillis()
                 
-                // Spawn new bubbles
                 if (currentTime - lastSpawnTime > spawnInterval && screenWidth > 0) {
-                    val radius = Random.nextFloat() * 30f + 90f // Base radius
+                    val radius = Random.nextFloat() * 30f + 90f
                     val x = Random.nextFloat() * (screenWidth - radius * 2) + radius
                     val speed = Random.nextFloat() * 3.0f + 4.0f + (level * 0.8f) 
                     bubbles.add(
@@ -127,13 +121,11 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                     spawnInterval = (2000L - (level * 150L)).coerceAtLeast(600L)
                 }
 
-                // Update bubbles
                 val bubblesToRemove = mutableListOf<Bubble>()
                 for (bubble in bubbles) {
                     bubble.y += bubble.speed
-                    if (bubble.y - bubble.radius > screenHeight - 200f) { // Bottom area threshold
+                    if (bubble.y - bubble.radius > screenHeight - 200f) {
                         bubblesToRemove.add(bubble)
-                        // Play TTS for the filler word that reached the speaker
                         tts?.speak(bubble.text, TextToSpeech.QUEUE_FLUSH, null, null)
                         
                         lives -= 1
@@ -144,30 +136,28 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                 }
                 bubbles.removeAll(bubblesToRemove)
                 
-                // Update particles
                 val particlesToRemove = mutableListOf<Particle>()
                 for (particle in particles) {
                     particle.x += particle.vx
                     particle.y += particle.vy
-                    particle.vy += 0.2f // gravity
+                    particle.vy += 0.2f
                     particle.life -= 0.03f
                     if (particle.life <= 0) particlesToRemove.add(particle)
                 }
                 particles.removeAll(particlesToRemove)
 
-                delay(16) // ~60fps
+                delay(16)
             }
         }
     }
     
     fun popBubble(bubble: Bubble) {
-        // Play click sound
         view.playSoundEffect(SoundEffectConstants.CLICK)
         
         bubbles.remove(bubble)
         score += 10
-        level = (score / 100) + 1 // Level up every 10 bubbles
-        // Spawn particles
+        level = (score / 100) + 1
+
         for (i in 0..20) {
             val angle = Random.nextFloat() * 2 * Math.PI.toFloat()
             val speed = Random.nextFloat() * 15f + 5f
@@ -212,7 +202,6 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                 )
         ) {
             if (!isPlaying && !isGameOver) {
-                // Intro Screen
                 Column(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -254,7 +243,6 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                     }
                 }
             } else {
-                // Game Canvas
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
@@ -268,13 +256,12 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                                     val dx = offset.x - bubble.x
                                     val dy = offset.y - bubble.y
                                     val distance = sqrt(dx * dx + dy * dy)
-                                    distance <= bubble.radius + 80f // Increased hit margin for easier tapping
+                                    distance <= bubble.radius + 80f
                                 }
                                 clickedBubbles.lastOrNull()?.let { popBubble(it) }
                             }
                         }
                 ) {
-                    // Draw particles
                     for (particle in particles) {
                         drawCircle(
                             color = particle.color.copy(alpha = particle.life),
@@ -282,8 +269,6 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                             center = Offset(particle.x, particle.y)
                         )
                     }
-
-                    // Draw bubbles
                     for (bubble in bubbles) {
                         drawCircle(
                             brush = Brush.radialGradient(
@@ -295,7 +280,6 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                             center = Offset(bubble.x, bubble.y)
                         )
                         
-                        // Bubble reflection/highlight
                         drawCircle(
                             color = Color.White.copy(alpha = 0.4f),
                             radius = bubble.radius * 0.25f,
@@ -319,8 +303,7 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                         )
                     }
                 }
-
-                // HUD
+                
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -330,19 +313,18 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                     Column {
                         Text("Nivel: $level", color = Color(0xFFE94560), fontSize = 28.sp, fontWeight = FontWeight.Black)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Puntos: $score", color = Color(0xFF0F3460), fontSize = 20.sp, fontWeight = FontWeight.Bold, 
-                             modifier = Modifier
+                        Text("Puntos: $score", color = Color(0xFF0F3460), fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                              modifier = Modifier
                                  .background(Color.White.copy(alpha = 0.8f), RoundedCornerShape(12.dp))
                                  .padding(horizontal = 12.dp, vertical = 4.dp))
                     }
                     
                     Text("❤️".repeat(lives), fontSize = 24.sp, 
-                         modifier = Modifier
+                          modifier = Modifier
                              .background(Color.White.copy(alpha = 0.8f), RoundedCornerShape(12.dp))
                              .padding(horizontal = 12.dp, vertical = 4.dp))
                 }
                 
-                // Orador / Base
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -356,7 +338,7 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     Text(
-                        text = "🗣️ Orador", 
+                        text = "🎤 Orador", 
                         color = Color.White, 
                         fontSize = 32.sp,
                         modifier = Modifier.padding(bottom = 16.dp)
@@ -385,7 +367,7 @@ fun EsquivaMuletillasGameScreen(onBack: () -> Unit) {
                                     isGameOver = false
                                     lives = 5
                                     score = 0
-                            level = 1
+                                    level = 1
                                     bubbles.clear()
                                     particles.clear()
                                 },

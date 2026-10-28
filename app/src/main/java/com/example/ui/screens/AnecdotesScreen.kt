@@ -78,7 +78,6 @@ fun AnecdotesScreen(onBack: () -> Unit) {
             }
         }
         tts = textToSpeech
-
         onDispose {
             textToSpeech?.stop()
             textToSpeech?.shutdown()

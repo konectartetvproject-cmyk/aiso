@@ -55,7 +55,6 @@ fun TechniquePracticeScreen(
     var isRecording by remember { mutableStateOf(false) }
     var recordedAudioBytes by remember { mutableStateOf<ByteArray?>(null) }
 
-    // When feedback arrives, move to FEEDBACK step
     LaunchedEffect(aiFeedback) {
         if (aiFeedback != null) {
             currentStep = PracticeStep.FEEDBACK
@@ -148,13 +147,14 @@ fun TechniquePracticeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .navigationBarsPadding()
+                .imePadding()
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             
-            // Linear Progress Indicator
             LinearProgressIndicator(
                 progress = {
                     when (currentStep) {

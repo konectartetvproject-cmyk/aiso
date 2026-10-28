@@ -102,7 +102,6 @@ fun CSQuizQuestionView(
             .padding(paddingValues)
             .padding(16.dp)
     ) {
-        // Progress bar
         LinearProgressIndicator(
             progress = { (state.currentQuestionIndex.toFloat() / state.questions.size.toFloat()) },
             modifier = Modifier
@@ -111,8 +110,6 @@ fun CSQuizQuestionView(
             color = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.height(24.dp))
-
-        // Situation
         Text(
             text = "Situación:",
             style = MaterialTheme.typography.labelLarge,
@@ -132,16 +129,15 @@ fun CSQuizQuestionView(
             color = MaterialTheme.colorScheme.secondary
         )
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Options
+        
         question.options.forEachIndexed { index, option ->
             val isSelected = state.selectedOptionIndex == index
             val isCorrect = index == question.correctOptionIndex
             
             val backgroundColor = when {
                 !state.showExplanation -> if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                state.showExplanation && isCorrect -> Color(0xFFE8F5E9) // Greenish
-                state.showExplanation && isSelected && !isCorrect -> Color(0xFFFFEBEE) // Reddish
+                state.showExplanation && isCorrect -> Color(0xFFE8F5E9)
+                state.showExplanation && isSelected && !isCorrect -> Color(0xFFFFEBEE)
                 else -> MaterialTheme.colorScheme.surfaceVariant
             }
             
@@ -169,7 +165,7 @@ fun CSQuizQuestionView(
                         text = option,
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (backgroundColor == MaterialTheme.colorScheme.surfaceVariant) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     
                     if (state.showExplanation) {
@@ -184,8 +180,7 @@ fun CSQuizQuestionView(
         }
         
         Spacer(modifier = Modifier.weight(1f))
-
-        // Explanation and Next button
+        
         if (state.showExplanation) {
             val isCorrect = state.selectedOptionIndex == question.correctOptionIndex
             Card(

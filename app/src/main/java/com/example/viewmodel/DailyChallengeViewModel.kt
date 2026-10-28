@@ -16,13 +16,10 @@ data class DailyChallenge(
 
 class DailyChallengeViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences("daily_challenge_prefs", Context.MODE_PRIVATE)
-
     private val _streak = MutableStateFlow(prefs.getInt("streak_count", 0))
     val streak: StateFlow<Int> = _streak.asStateFlow()
-
     private val _isCompletedToday = MutableStateFlow(checkIfCompletedToday())
     val isCompletedToday: StateFlow<Boolean> = _isCompletedToday.asStateFlow()
-
     private val _currentChallenge = MutableStateFlow(getChallengeForToday())
     val currentChallenge: StateFlow<DailyChallenge> = _currentChallenge.asStateFlow()
 
@@ -50,15 +47,12 @@ class DailyChallengeViewModel(application: Application) : AndroidViewModel(appli
 
     fun markAsCompleted() {
         if (_isCompletedToday.value) return
-
         val currentDay = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         
         val lastCompletedDay = prefs.getInt("last_completed_day", -1)
         val lastCompletedYear = prefs.getInt("last_completed_year", -1)
-
         var newStreak = _streak.value
-
         val calYesterday = Calendar.getInstance()
         calYesterday.add(Calendar.DAY_OF_YEAR, -1)
         val yesterdayDay = calYesterday.get(Calendar.DAY_OF_YEAR)

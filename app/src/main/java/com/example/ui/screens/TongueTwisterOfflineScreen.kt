@@ -85,9 +85,7 @@ fun TongueTwisterOfflineScreen(onBack: () -> Unit) {
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-
                 Spacer(modifier = Modifier.height(24.dp))
-
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -113,19 +111,14 @@ fun TongueTwisterOfflineScreen(onBack: () -> Unit) {
                         )
                     }
                 }
-
                 Spacer(modifier = Modifier.height(32.dp))
-
-                // Cronómetro
                 Text(
                     text = formatTime(timeElapsed),
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
                 )
-
                 Spacer(modifier = Modifier.height(24.dp))
-
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.fillMaxWidth()
@@ -143,9 +136,7 @@ fun TongueTwisterOfflineScreen(onBack: () -> Unit) {
                         Spacer(Modifier.width(8.dp))
                         Text(if (isRunning) "Detener" else if (timeElapsed > 0) "Continuar" else "Iniciar", fontWeight = FontWeight.Bold)
                     }
-
                     Spacer(Modifier.width(16.dp))
-
                     OutlinedButton(
                         onClick = {
                             isRunning = false
@@ -160,9 +151,7 @@ fun TongueTwisterOfflineScreen(onBack: () -> Unit) {
                         Text("Reiniciar", fontWeight = FontWeight.Bold)
                     }
                 }
-
                 Spacer(modifier = Modifier.height(32.dp))
-
                 Button(
                     onClick = {
                         var nextTwister = tongueTwistersList.random()

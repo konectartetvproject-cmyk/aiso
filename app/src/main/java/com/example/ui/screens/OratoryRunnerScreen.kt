@@ -58,7 +58,7 @@ fun OratoryRunnerScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Esquiva las muletillas (🧟) y el pánico escénico (👻).\nRecolecta palabras clave (💡).",
+                    text = "Esquiva las muletillas (🛑) y el pánico escénico (👻).\nRecolecta palabras clave (💡).",
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -106,7 +106,6 @@ fun OratoryRunnerScreen(
                     .padding(paddingValues)
                     .background(Color(0xFF263238))
             ) {
-                // Score Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -123,7 +122,6 @@ fun OratoryRunnerScreen(
                     )
                 }
                 
-                // Game Board
                 BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxSize()
@@ -149,7 +147,6 @@ fun OratoryRunnerScreen(
                 ) {
                     val laneWidth = maxWidth / 3
                     
-                    // Lanes background
                     Row(modifier = Modifier.fillMaxSize()) {
                         for (i in 0..2) {
                             Box(
@@ -161,7 +158,6 @@ fun OratoryRunnerScreen(
                         }
                     }
                     
-                    // Items
                     state.items.forEach { item ->
                         Box(
                             modifier = Modifier
@@ -177,7 +173,6 @@ fun OratoryRunnerScreen(
                         }
                     }
                     
-                    // Player
                     Box(
                         modifier = Modifier
                             .offset(
@@ -188,7 +183,7 @@ fun OratoryRunnerScreen(
                             .height(60.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("🗣️", fontSize = 50.sp)
+                        Text("🏃", fontSize = 50.sp)
                     }
                 }
             }

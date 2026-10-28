@@ -51,7 +51,6 @@ fun DashboardScreen(viewModel: OratoriaViewModel) {
                 modifier = Modifier.padding(vertical = 16.dp)
             )
 
-            // Barra de progreso general
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -88,7 +87,6 @@ fun DashboardScreen(viewModel: OratoriaViewModel) {
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Datos de progreso por áreas clave del libro
             val areasGrouped = allLessons.groupBy { it.areaName }
             val areas = areasGrouped.map { (areaName, areaLessons) ->
                 val completedInArea = areaLessons.count { completedLessons.contains(it.id) }

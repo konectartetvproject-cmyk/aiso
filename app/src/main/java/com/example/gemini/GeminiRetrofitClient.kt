@@ -9,11 +9,9 @@ import java.util.concurrent.TimeUnit
 
 object GeminiRetrofitClient {
     private const val BASE_URL = "https://generativelanguage.googleapis.com/"
-
     private val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
         .build()
-
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)

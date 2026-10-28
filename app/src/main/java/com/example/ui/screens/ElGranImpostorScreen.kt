@@ -393,7 +393,6 @@ fun SpeakingPhase(
         )
         Spacer(modifier = Modifier.height(48.dp))
         
-        // Timer circle
         Box(
             modifier = Modifier
                 .size(200.dp)

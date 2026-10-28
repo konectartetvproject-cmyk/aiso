@@ -3,15 +3,8 @@ package com.example.viewmodel
 import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
-import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.BuildConfig
-import com.example.api.Content
-import com.example.api.GenerateContentRequest
-import com.example.api.InlineData
-import com.example.api.Part
-import com.example.api.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +12,6 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 class TongueTwisterDuelViewModel : ViewModel() {
-
     private val _isRecordingP1 = MutableStateFlow(false)
     val isRecordingP1: StateFlow<Boolean> = _isRecordingP1.asStateFlow()
 
@@ -96,65 +88,18 @@ class TongueTwisterDuelViewModel : ViewModel() {
             _error.value = "Ambos jugadores deben grabar su audio."
             return
         }
-
         _isAnalyzing.value = true
         _feedback.value = null
         _error.value = null
-
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
-                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _error.value = "Por favor, configura tu API Key de Gemini en la pestaña de Secrets."
-                    _isAnalyzing.value = false
-                    return@launch
-                }
-
-                val bytesP1 = audioFileP1!!.readBytes()
-                val base64AudioP1 = Base64.encodeToString(bytesP1, Base64.NO_WRAP)
-                
-                val bytesP2 = audioFileP2!!.readBytes()
-                val base64AudioP2 = Base64.encodeToString(bytesP2, Base64.NO_WRAP)
-
-                val prompt = """
-                    Eres un juez experto en oratoria evaluando un duelo de trabalenguas.
-                    El trabalenguas es el siguiente:
-                    "$twisterText"
-                    
-                    Te proporciono dos audios:
-                    - El Audio 1 es del Jugador 1.
-                    - El Audio 2 es del Jugador 2.
-                    
-                    Por favor, escucha ambos audios y evalúa la dicción, claridad, fluidez y entonación de cada uno.
-                    Declara un ganador claro basándote en quién lo recitó mejor.
-                    Dame tu respuesta estructurada:
-                    1. Análisis Jugador 1 (Breve)
-                    2. Análisis Jugador 2 (Breve)
-                    3. Ganador y por qué (Breve)
-                """.trimIndent()
-
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(
-                            parts = listOf(
-                                Part(text = prompt),
-                                Part(inlineData = InlineData(mimeType = "audio/mp4", data = base64AudioP1)),
-                                Part(inlineData = InlineData(mimeType = "audio/mp4", data = base64AudioP2))
-                            )
-                        )
-                    )
-                )
-
-                val response = RetrofitClient.service.generateContent(apiKey, request)
-                val text = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                
-                if (text != null) {
-                    _feedback.value = text
-                } else {
-                    _error.value = "No se recibió respuesta del análisis."
-                }
+                kotlinx.coroutines.delay(450)
+                val len1 = audioFileP1?.length() ?: 0L
+                val len2 = audioFileP2?.length() ?: 0L
+                val feedback = com.example.util.AisoOfflineEngine.evaluateTongueTwisterDuel(twisterText, len1, len2)
+                _feedback.value = feedback
             } catch (e: Exception) {
-                _error.value = "Error de conexión o análisis: ${e.message}"
+                _error.value = "Error al evaluar duelo: ${e.message}"
             } finally {
                 _isAnalyzing.value = false
             }

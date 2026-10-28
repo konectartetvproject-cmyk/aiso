@@ -23,7 +23,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlin.random.Random
 
 data class StagePoint(val id: Int, val name: String)
 
@@ -56,7 +55,7 @@ fun StageMovementGameScreen(
 ) {
     var score by remember { mutableIntStateOf(0) }
     var streak by remember { mutableIntStateOf(0) }
-    var currentSpeakerPosition by remember { mutableIntStateOf(4) } // Start at center
+    var currentSpeakerPosition by remember { mutableIntStateOf(4) }
     
     var currentLevel by remember { mutableIntStateOf(1) }
     var targetPoint by remember { mutableStateOf(stagePoints.random()) }
@@ -65,8 +64,7 @@ fun StageMovementGameScreen(
     var showReward by remember { mutableStateOf(false) }
     var showIntro by remember { mutableStateOf(true) }
     var showLevel2Intro by remember { mutableStateOf(false) }
-    
-    // Make sure target is not the same as current position
+
     LaunchedEffect(targetPoint, currentLevel) {
         if (currentLevel == 1 && targetPoint.id == currentSpeakerPosition) {
             var newTarget = stagePoints.random()
@@ -160,7 +158,6 @@ fun StageMovementGameScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Level switch
             SingleChoiceSegmentedButtonRow(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
             ) {
@@ -185,7 +182,6 @@ fun StageMovementGameScreen(
                 }
             }
 
-            // Header stats
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -221,7 +217,6 @@ fun StageMovementGameScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Objective
             Text(
                 text = if (currentLevel == 1) "Mueve al orador hacia:" else "Buscas comunicar:",
                 style = MaterialTheme.typography.titleMedium,
@@ -245,7 +240,6 @@ fun StageMovementGameScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Stage Area
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -270,7 +264,6 @@ fun StageMovementGameScreen(
                                 val pointId = row * 3 + col
                                 val isCurrentPosition = pointId == currentSpeakerPosition
                                 val scale by animateFloatAsState(if (isCurrentPosition) 1.2f else 1.0f)
-
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
@@ -287,13 +280,11 @@ fun StageMovementGameScreen(
                                                 } else {
                                                     targetIntent.validPoints.contains(pointId)
                                                 }
-
                                                 if (isCorrect) {
                                                     score += 10 + (streak * 5)
                                                     streak++
                                                     showReward = true
                                                     
-                                                    // Set new target
                                                     if (currentLevel == 1) {
                                                         var newTarget = stagePoints.random()
                                                         while (newTarget.id == currentSpeakerPosition) {
@@ -346,7 +337,6 @@ fun StageMovementGameScreen(
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.outline
             )
-
             if (showReward) {
                 LaunchedEffect(Unit) {
                     delay(1000)

@@ -22,7 +22,7 @@ data class OpeningClosingQuestion(
     val title: String,
     val example: String,
     val icon: ImageVector,
-    val type: String, // "Inicio" or "Conclusión"
+    val type: String,
     val specificTechnique: String,
     val options: List<String>,
     val explanation: String
@@ -99,8 +99,8 @@ val openingClosingQuestions = listOf(
 fun OpeningClosingGameScreen(onBack: () -> Unit) {
     var currentIndex by remember { mutableIntStateOf(0) }
     var score by remember { mutableIntStateOf(0) }
-    var gameState by remember { mutableStateOf("intro") } // intro, phase1, phase2, won
-    var currentPhase by remember { mutableIntStateOf(1) } // 1: Inicio vs Cierre, 2: Specific Technique
+    var gameState by remember { mutableStateOf("intro") }
+    var currentPhase by remember { mutableIntStateOf(1) }
     var showFeedback by remember { mutableStateOf(false) }
     var feedbackMessage by remember { mutableStateOf("") }
     var feedbackColor by remember { mutableStateOf(Color.Green) }

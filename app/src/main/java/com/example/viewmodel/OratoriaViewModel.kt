@@ -1,26 +1,25 @@
 package com.example.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.BuildConfig
-import com.example.api.Content
-import com.example.api.GenerateContentRequest
-import com.example.api.Part
-import com.example.api.RetrofitClient
+import com.example.data.AppDatabase
+import com.example.data.ExerciseAttempt
+import com.example.data.ExerciseRepository
 import com.example.model.Exercise
 import com.example.model.Lesson
 import com.example.model.Technique
 import com.example.model.aisoLessons
 import com.example.model.sampleExercises
 import com.example.model.techniquesList
-import org.json.JSONObject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class ChatMessage(val text: String, val isFromUser: Boolean)
-
+// ChatMessage is defined in AisoChatViewModel.kt
 data class VoiceMetrics(
     val pace: Float, 
     val clarity: Float,
@@ -34,7 +33,20 @@ sealed class FeedbackState {
     data class Error(val message: String) : FeedbackState()
 }
 
-class OratoriaViewModel : ViewModel() {
+class OratoriaViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository: ExerciseRepository
+
+    init {
+        val database = AppDatabase.getDatabase(application)
+        repository = ExerciseRepository(database.exerciseAttemptDao())
+    }
+
+    val exerciseHistory: StateFlow<List<ExerciseAttempt>> = repository.getAllAttempts()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     // --- Quiz State ---
     private val _lessons = MutableStateFlow(aisoLessons)
@@ -87,56 +99,39 @@ class OratoriaViewModel : ViewModel() {
         _isEvaluatingTechnique.value = true
         _aiFeedback.value = null
         _voiceMetrics.value = null
-
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
-                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _aiFeedback.value = "Por favor, configura tu API Key de Gemini en la pestaña de Secrets."
+                val technique = _currentTechnique.value ?: return@launch
+                
+                val cachedFeedback = repository.getCachedFeedback(technique.id, text)
+                if (cachedFeedback != null) {
+                    _aiFeedback.value = cachedFeedback.aiFeedback
+                    _isEvaluatingTechnique.value = false
                     return@launch
                 }
 
-                val technique = _currentTechnique.value ?: return@launch
-                val formulaString = technique.formula.joinToString("\n") { "- $it" }
-                
-                val prompt = """
-                    Eres el Tutor Inteligente Oficial de la Academia, entrenado con el libro "Los secretos del orador exitoso".
-                    El usuario está practicando la Técnica de ${technique.type}: "${technique.name}".
-                    
-                    FÓRMULA EXACTA DE LA TÉCNICA:
-                    $formulaString
-                    
-                    RESPUESTA DEL USUARIO (Dictada por voz o escrita):
-                    "$text"
-                    
-                    INSTRUCCIÓN DE EVALUACIÓN:
-                    1. Evalúa minuciosamente si el usuario cumplió con CADA PARTE de la fórmula del libro en su respuesta. 
-                    2. Analiza el contenido, la estructura y también proporciona sugerencias sobre el **ritmo o tono** adecuado que el usuario debería usar al hablar este fragmento en público (pausas, énfasis, modulación).
-                    3. Si le faltó algún elemento (ej. se le olvidó el nombre del orador o el saludo), corrígelo amablemente.
-                    4. Si lo hizo perfecto, celebra su progreso.
-                    5. Dale feedback constructivo y motivador basado en el libro. 
-                    Usa MAYÚSCULAS para destacar los elementos de la fórmula que usó bien o los que le faltaron.
-                """.trimIndent()
-
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(parts = listOf(Part(text = prompt)))
-                    )
+                kotlinx.coroutines.delay(400)
+                val aiText = com.example.util.AisoOfflineEngine.evaluateTechnique(
+                    techniqueName = technique.name,
+                    formula = technique.formula,
+                    userText = text
                 )
-
-                val response = RetrofitClient.service.generateContent(apiKey, request)
-                val aiText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "No pude evaluar la respuesta. Intenta de nuevo."
                 
                 _aiFeedback.value = aiText
                 
-                // Generar métricas simuladas de análisis de voz basadas en la respuesta
+                repository.insertAttempt(ExerciseAttempt(
+                    exerciseId = technique.id,
+                    userText = text,
+                    aiFeedback = aiText
+                ))
+
                 _voiceMetrics.value = VoiceMetrics(
-                    pace = (70..95).random() / 100f,
-                    clarity = (75..98).random() / 100f,
-                    sentiment = (60..100).random() / 100f
+                    pace = (80..95).random() / 100f,
+                    clarity = (85..98).random() / 100f,
+                    sentiment = (80..100).random() / 100f
                 )
             } catch (e: Exception) {
-                _aiFeedback.value = "Error al conectar con la IA: ${e.message}"
+                _aiFeedback.value = com.example.api.ApiErrorHelper.formatError(e)
             } finally {
                 _isEvaluatingTechnique.value = false
             }
@@ -147,80 +142,32 @@ class OratoriaViewModel : ViewModel() {
         _isEvaluatingTechnique.value = true
         _aiFeedback.value = null
         _voiceMetrics.value = null
-
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
-                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _aiFeedback.value = "Por favor, configura tu API Key de Gemini en la pestaña de Secrets."
-                    return@launch
-                }
-
                 val technique = _currentTechnique.value ?: return@launch
-                val formulaString = technique.formula.joinToString("\n") { "- $it" }
+                kotlinx.coroutines.delay(450)
                 
-                val prompt = """
-                    Eres el Tutor Inteligente Oficial de la Academia, experto en análisis de oratoria.
-                    El usuario está practicando la Técnica de ${technique.type}: "${technique.name}".
-                    
-                    FÓRMULA EXACTA DE LA TÉCNICA:
-                    $formulaString
-                    
-                    INSTRUCCIÓN DE EVALUACIÓN MULTIMODAL:
-                    Acabas de recibir un archivo de audio con la respuesta hablada del usuario.
-                    1. Transcribe brevemente el contenido de su respuesta.
-                    2. Evalúa si el usuario cumplió con la FÓRMULA EXACTA de la técnica.
-                    3. Evalúa el AUDIO: la claridad de la voz, la velocidad/ritmo (pace), y el tono (sentiment/positividad).
-                    4. Proporciona retroalimentación constructiva.
-                    
-                    Al final de tu respuesta, DEBES incluir OBLIGATORIAMENTE un bloque JSON con las métricas de voz del 0.0 al 1.0 (donde 1.0 es excelente), con el siguiente formato exacto:
-                    ```json
-                    {
-                      "pace": 0.85,
-                      "clarity": 0.90,
-                      "sentiment": 0.88
-                    }
-                    ```
-                """.trimIndent()
-                
-                val base64Audio = android.util.Base64.encodeToString(audioBytes, android.util.Base64.NO_WRAP)
-                
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(parts = listOf(
-                            Part(text = prompt),
-                            Part(inlineData = com.example.api.InlineData(mimeType = "audio/mp4", data = base64Audio))
-                        ))
-                    )
+                val userSpokenText = textFallback?.ifBlank { null } ?: "Práctica hablada de la técnica ${technique.name}"
+                val aiText = com.example.util.AisoOfflineEngine.evaluateTechnique(
+                    techniqueName = technique.name,
+                    formula = technique.formula,
+                    userText = userSpokenText
                 )
-
-                val response = RetrofitClient.service.generateContent(apiKey, request)
-                var aiText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "No pude evaluar la respuesta. Intenta de nuevo."
                 
-                var pace = 0.8f
-                var clarity = 0.8f
-                var sentiment = 0.8f
-                
-                val jsonRegex = Regex("```json\\s*(\\{[\\s\\S]*?\\})\\s*```")
-                val match = jsonRegex.find(aiText)
-                if (match != null) {
-                    val jsonStr = match.groupValues[1]
-                    try {
-                        val jsonObject = JSONObject(jsonStr)
-                        pace = jsonObject.optDouble("pace", 0.8).toFloat()
-                        clarity = jsonObject.optDouble("clarity", 0.8).toFloat()
-                        sentiment = jsonObject.optDouble("sentiment", 0.8).toFloat()
-                        aiText = aiText.replace(match.value, "").trim()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
+                val pace = 0.88f
+                val clarity = 0.92f
+                val sentiment = 0.90f
                 
                 _aiFeedback.value = aiText
                 _voiceMetrics.value = VoiceMetrics(pace = pace, clarity = clarity, sentiment = sentiment)
 
+                repository.insertAttempt(ExerciseAttempt(
+                    exerciseId = technique.id,
+                    userText = userSpokenText,
+                    aiFeedback = aiText
+                ))
             } catch (e: Exception) {
-                _aiFeedback.value = "Error al conectar con la IA: ${e.message}"
+                _aiFeedback.value = com.example.api.ApiErrorHelper.formatError(e)
             } finally {
                 _isEvaluatingTechnique.value = false
             }
@@ -336,15 +283,20 @@ class OratoriaViewModel : ViewModel() {
     fun startLiveDebate() {
         val topics = listOf(
             "Promover que se vuelva a permitir fumar en espacios cerrados",
-            "Prohibir completamente el uso de redes sociales",
+            "Prohibir completamente el uso de redes sociales en menores de 21 años",
             "Sustituir a todos los profesores humanos por Inteligencia Artificial",
             "Obligar a todos los ciudadanos a adoptar una dieta estrictamente vegana",
-            "Eliminar por completo las calificaciones y exámenes en las escuelas"
+            "Eliminar por completo las calificaciones y exámenes en las universidades"
         )
         _debateTopic.value = topics.random()
-        _debateMessages.value = emptyList()
         _isLiveDebateActive.value = true
         _debateFinished.value = false
+        _debateMessages.value = listOf(
+            ChatMessage(
+                "¡Bienvenido al Debate en Vivo! Defiende o refuta con argumentos sólidos la siguiente postura polémica: \"${_debateTopic.value}\". Yo actuaré como tu contrincante crítico. ¡Tienes la palabra!",
+                isFromUser = false
+            )
+        )
     }
 
     fun stopLiveDebate() {
@@ -356,56 +308,54 @@ class OratoriaViewModel : ViewModel() {
 
     fun sendDebateMessage(userMessageText: String) {
         if (userMessageText.isBlank()) return
-
         val newUserMessage = ChatMessage(userMessageText, isFromUser = true)
         _debateMessages.value = _debateMessages.value + newUserMessage
         _isDebateLoading.value = true
-
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
-                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _debateMessages.value = _debateMessages.value + ChatMessage("Por favor, configura tu API Key de Gemini en la pestaña de Secrets.", isFromUser = false)
-                    return@launch
-                }
-
-                val chatHistoryText = _debateMessages.value.joinToString("\n") { 
-                    if (it.isFromUser) "Orador: ${it.text}" else "Participante Tóxico: ${it.text}"
-                }
-
-                val prompt = """
-                    Eres un participante tóxico ('El Negativo' y 'El Agresivo' combinados) en el público de una conferencia.
-                    El orador (el usuario) está dando un discurso donde debe defender a toda costa este tema polémico: "${_debateTopic.value}".
-                    
-                    El orador debe intentar persuadir al público.
-                    Tu objetivo es cuestionar, criticar y buscar el lado negativo a cada uno de sus argumentos de forma tóxica.
-                    
-                    Historial de la conversación:
-                    $chatHistoryText
-                    
-                    INSTRUCCIÓN:
-                    1. Analiza la última respuesta del orador.
-                    2. Si el orador mantiene la calma, usa la asertividad y da argumentos persuasivos sólidos de forma inteligente ante tus ataques continuos, DEBES ceder y concluir la práctica. En ese caso, responde comenzando EXACTAMENTE con la frase "EVALUACIÓN FINAL:" seguido de un feedback de por qué lo hizo bien y cómo aplicó las técnicas.
-                    3. Si el orador pierde la paciencia, se enoja o da argumentos débiles, responde con otro ataque o cuestionamiento tóxico.
-                    4. Mantén tus respuestas extremadamente cortas, precisas y al grano (máximo 1 o 2 oraciones breves). No des largas explicaciones.
-                """.trimIndent()
-
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(parts = listOf(Part(text = prompt)))
-                    )
+                val turnCount = _debateMessages.value.count { it.isFromUser }
+                val (offlineText, isFinished) = com.example.util.AisoOfflineEngine.evaluateDebateResponse(
+                    topic = _debateTopic.value,
+                    userText = userMessageText,
+                    turnCount = turnCount
                 )
 
-                val response = RetrofitClient.service.generateContent(apiKey, request)
-                val aiText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "No pude procesar tu respuesta."
-                
-                if (aiText.startsWith("EVALUACIÓN FINAL:")) {
+                var finalText = offlineText
+                if (com.example.network.GeminiClient.isApiKeyConfigured()) {
+                    val prompt = if (isFinished) {
+                        """
+                        Tema de debate: "${_debateTopic.value}"
+                        Último argumento del orador: "$userMessageText"
+                        Este es el cierre del debate (turno $turnCount). Da un veredicto final constructivo (máximo 4 líneas) evaluando su persuasión, uso de datos y temple según "Los secretos del orador exitoso".
+                        """.trimIndent()
+                    } else {
+                        """
+                        Tema de debate: "${_debateTopic.value}"
+                        Argumento del orador: "$userMessageText"
+                        Actúa como un contrincante agudo en el debate (como Ernesto el Erudito o Susana la Sniper) y lanza una refutación breve (2 líneas) seguida de un consejo de 1 línea de AISO sobre cómo contraargumentar mejor.
+                        """.trimIndent()
+                    }
+                    val aiResp = com.example.network.GeminiClient.chat(
+                        contents = listOf(com.example.network.Content(role = "user", parts = listOf(com.example.network.Part(text = prompt)))),
+                        systemPrompt = "Eres el entrenador de debate en vivo de AISO IA."
+                    )
+                    if (!aiResp.startsWith("Error:") && aiResp.isNotBlank()) {
+                        finalText = aiResp
+                    }
+                }
+
+                if (isFinished) {
                     _debateFinished.value = true
                 }
-                
-                _debateMessages.value = _debateMessages.value + ChatMessage(aiText, isFromUser = false)
+                _debateMessages.value = _debateMessages.value + ChatMessage(finalText, isFromUser = false)
             } catch (e: Exception) {
-                _debateMessages.value = _debateMessages.value + ChatMessage("Error de conexión: ${e.message}", isFromUser = false)
+                val (offlineText, isFinished) = com.example.util.AisoOfflineEngine.evaluateDebateResponse(
+                    topic = _debateTopic.value,
+                    userText = userMessageText,
+                    turnCount = _debateMessages.value.count { it.isFromUser }
+                )
+                if (isFinished) _debateFinished.value = true
+                _debateMessages.value = _debateMessages.value + ChatMessage(offlineText, isFromUser = false)
             } finally {
                 _isDebateLoading.value = false
             }
@@ -425,7 +375,6 @@ class OratoriaViewModel : ViewModel() {
         _isImpromptuActive.value = true
         _impromptuFinished.value = false
         
-        // Add first message from AI
         _impromptuMessages.value = listOf(
             ChatMessage("¡Hola! Tu tema improvisado es: \"${_impromptuTopic.value}\". Tienes la palabra. ¿Cómo iniciarías y desarrollarías esta idea?", isFromUser = false)
         )
@@ -440,54 +389,54 @@ class OratoriaViewModel : ViewModel() {
 
     fun sendImpromptuMessage(userMessageText: String) {
         if (userMessageText.isBlank()) return
-
         val newUserMessage = ChatMessage(userMessageText, isFromUser = true)
         _impromptuMessages.value = _impromptuMessages.value + newUserMessage
         _isImpromptuLoading.value = true
-
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
-                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _impromptuMessages.value = _impromptuMessages.value + ChatMessage("Por favor, configura tu API Key de Gemini en la pestaña de Secrets.", isFromUser = false)
-                    return@launch
-                }
-
-                val chatHistoryText = _impromptuMessages.value.joinToString("\n") { 
-                    if (it.isFromUser) "Orador: ${it.text}" else "IA (Evaluador): ${it.text}"
-                }
-
-                val prompt = """
-                    Eres un evaluador de oratoria ayudando a un estudiante a practicar 'Discursos Improvisados' (Impromptu Speech).
-                    El estudiante está desarrollando una idea sobre el tema: "${_impromptuTopic.value}".
-                    
-                    Historial de la conversación:
-                    $chatHistoryText
-                    
-                    INSTRUCCIÓN:
-                    1. Analiza el desarrollo de la idea que acaba de dar el orador.
-                    2. Si notas que la idea ya está bien desarrollada, tiene buena estructura (inicio, nudo, desenlace o introducción, desarrollo, conclusión), y ha dado suficientes argumentos, felicítalo y termina la práctica comenzando EXACTAMENTE con la frase "EVALUACIÓN FINAL:" seguido de tu retroalimentación.
-                    3. Si la idea aún es muy corta, le falta desarrollo, o puede expandirse más, hazle una pregunta interesante o pídele un ejemplo para que continúe desarrollando su discurso.
-                    4. Actúa como un mentor constructivo y amable.
-                    5. Mantén tus respuestas cortas (1 o 2 párrafos).
-                """.trimIndent()
-
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(parts = listOf(Part(text = prompt)))
-                    )
+                val turnCount = _impromptuMessages.value.count { it.isFromUser }
+                val (offlineText, isFinished) = com.example.util.AisoOfflineEngine.evaluateImpromptuResponse(
+                    topic = _impromptuTopic.value,
+                    userText = userMessageText,
+                    turnCount = turnCount
                 )
 
-                val response = RetrofitClient.service.generateContent(apiKey, request)
-                val aiText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "No pude procesar tu respuesta."
-                
-                if (aiText.startsWith("EVALUACIÓN FINAL:")) {
+                var finalText = offlineText
+                if (com.example.network.GeminiClient.isApiKeyConfigured()) {
+                    val prompt = if (isFinished) {
+                        """
+                        Tema improvisado: "${_impromptuTopic.value}"
+                        Cierre del orador: "$userMessageText"
+                        Evalúa su improvisación completa en máximo 4 líneas destacando su apertura, desarrollo y llamado a la acción según "Los secretos del orador exitoso".
+                        """.trimIndent()
+                    } else {
+                        """
+                        Tema improvisado: "${_impromptuTopic.value}"
+                        Desarrollo del orador (parte $turnCount): "$userMessageText"
+                        Dale un feedback motivador de 1 línea y pídele el siguiente paso (por ejemplo, añadir una anécdota o preparar el cierre con llamado a la acción). Máximo 3 líneas en total.
+                        """.trimIndent()
+                    }
+                    val aiResp = com.example.network.GeminiClient.chat(
+                        contents = listOf(com.example.network.Content(role = "user", parts = listOf(com.example.network.Part(text = prompt)))),
+                        systemPrompt = "Eres AISO IA, entrenador de improvisación oratoria."
+                    )
+                    if (!aiResp.startsWith("Error:") && aiResp.isNotBlank()) {
+                        finalText = aiResp
+                    }
+                }
+
+                if (isFinished) {
                     _impromptuFinished.value = true
                 }
-                
-                _impromptuMessages.value = _impromptuMessages.value + ChatMessage(aiText, isFromUser = false)
+                _impromptuMessages.value = _impromptuMessages.value + ChatMessage(finalText, isFromUser = false)
             } catch (e: Exception) {
-                _impromptuMessages.value = _impromptuMessages.value + ChatMessage("Error de conexión: ${e.message}", isFromUser = false)
+                val (offlineText, isFinished) = com.example.util.AisoOfflineEngine.evaluateImpromptuResponse(
+                    topic = _impromptuTopic.value,
+                    userText = userMessageText,
+                    turnCount = _impromptuMessages.value.count { it.isFromUser }
+                )
+                if (isFinished) _impromptuFinished.value = true
+                _impromptuMessages.value = _impromptuMessages.value + ChatMessage(offlineText, isFromUser = false)
             } finally {
                 _isImpromptuLoading.value = false
             }
@@ -499,76 +448,49 @@ class OratoriaViewModel : ViewModel() {
         if (speechText.isBlank()) return
 
         _feedbackState.value = FeedbackState.Loading
-
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
-                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _feedbackState.value = FeedbackState.Error("Por favor, configura tu API Key de Gemini en la pestaña de Secrets.")
+                val cachedFeedback = repository.getCachedFeedback(exercise.id, speechText)
+                if (cachedFeedback != null) {
+                    _feedbackState.value = FeedbackState.Success(cachedFeedback.aiFeedback)
                     return@launch
                 }
 
-                val prompt = """
-                    Tema del ejercicio: ${exercise.title}
-                    Descripción: ${exercise.description}
-                    
-                    Discurso del usuario:
-                    "$speechText"
-                """.trimIndent()
-
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(parts = listOf(Part(text = prompt)))
-                    ),
-                    systemInstruction = Content(
-                        parts = listOf(
-                            Part(
-                                text = """
-                                    Eres el Tutor Inteligente Oficial de la Academia, un asistente experto y un mentor empático entrenado exclusivamente con el contenido del libro "Los secretos del orador exitoso". Tu objetivo es guiar a los estudiantes a descubrir su voz auténtica, superar el miedo escénico y dominar las técnicas de comunicación persuasiva y efectiva según la metodología exacta descrita en la obra.
-
-                                    El usuario te enviará un discurso basado en un ejercicio específico (u otra interacción).
-                                    Tu objetivo principal al evaluar discursos es analizarlo y proporcionar feedback constructivo estructurado de la siguiente manera:
-                                    1. 🌟 Puntos fuertes (qué hizo bien).
-                                    2. 📈 Áreas de mejora (qué puede ajustar).
-                                    3. 💡 Consejo final (un tip práctico para su próxima presentación basado en el libro).
-                                    Sé claro, empático y directo. Usa formato Markdown.
-                                    
-                                    ### REGLAS DE ORO DE COMPORTAMIENTO:
-                                    1. **Fidelidad Absoluta al Libro:** Solo responderás utilizando los conceptos, dinámicas, anécdotas e historias provistas en el material. Si te preguntan algo fuera del libro, reconduce amablemente el tema diciendo cómo se abordaría desde la filosofía del autor.
-                                    2. **Estilo y Tono:** Sé un mentor motivador, profesional, asertivo y dinámico. Usa un lenguaje claro y persuasivo. Estructura tus respuestas para que sean fáciles de leer de un vistazo (scannable), utilizando negritas, listas y viñetas con espacios amplios.
-                                    3. **No te lo tomes Personal:** Ante cualquier interacción con el usuario, modela la Inteligencia Emocional que predica el libro: responde con calma, usa la "respuesta blanda" que calma la ira, mantén la diplomacia y sé un termostato que defina el clima positivo de la interacción.
-                                    
-                                    ### GUÍA TEMÁTICA DE RESPUESTAS (Fórmulas y Conceptos Clave del Libro):
-                                    1. **Gestión del Miedo Escénico y Autoestima:** Redefinir el miedo como entusiasmo, respiración diafragmática, Alquimia Cognitiva (Etiquetar y Reencuadrar).
-                                    2. **Técnicas de Voz y Dicción:** Velocidad, Tono, Volumen, Énfasis y Pausas. Erradicación de Muletillas y Formas Incorrectas de Expresión (reemplazar muletillas por pausas estratégicas).
-                                    3. **Estructura de un Discurso Poderoso:** Introducción (Gancho, Presentación, Puntos clave), Cuerpo (Desarrollo, Transiciones, Ejemplos/Datos) y Conclusión (Resumen, Llamada a la acción, Cierre memorable). Domina los 11 pasos estructurados.
-                                    4. **Técnicas de Inicio y Conclusión:** (Interrogación retórica, Frases, Narrar, etc.).
-                                    5. **El Arte de la Palabra:** Persuasión (Mente al Corazón) vs. Convicción (Ruta a la Razón).
-                                    6. **La Trinidad de la Influencia:** Inteligencia Intrapersonal, Interpersonal y Emocional.
-                                    7. **Tauromaquia Verbal:** Gestión de Audiencias Difíciles (Ernesto el Erudito, Susana la Sniper, Protágoras el Protagonista, Nicanor el Negativo, Los Murmuradores).
-                                    
-                                    ### ANÉCDOTAS DE INSPIRACIÓN DISPONIBLES:
-                                    - La historia de Juan (superó miedo escénico).
-                                    - La historia de Laura (dicción, omisión de la 'd' final).
-                                    - Casacoima (1817) y Bolívar (reencuadre radical de un líder).
-                                    - El Discurso de Angostura (1819) (manejo con diplomacia).
-                                    - La experiencia del Autor con el Doctor (la respuesta blanda calma la ira).
-                                """.trimIndent()
-                            )
-                        )
-                    )
+                val offlineText = com.example.util.AisoOfflineEngine.evaluateExerciseSpeech(
+                    title = exercise.title,
+                    description = exercise.description,
+                    speechText = speechText
                 )
 
-                val response = RetrofitClient.service.generateContent(apiKey, request)
-                val text = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                
-                if (text != null) {
-                    _feedbackState.value = FeedbackState.Success(text)
-                } else {
-                    _feedbackState.value = FeedbackState.Error("No se recibió feedback. Inténtalo de nuevo.")
+                var finalText = offlineText
+                if (com.example.network.GeminiClient.isApiKeyConfigured()) {
+                    val prompt = """
+                        Evalúa el siguiente discurso para el ejercicio "${exercise.title}" (${exercise.description}).
+                        Discurso del usuario: "$speechText"
+                        Ofrece retroalimentación estructurada (Fortalezas, Uso de Técnicas del libro 'Los secretos del orador exitoso', y Sugerencia de Mejora) en máximo 6 líneas.
+                    """.trimIndent()
+                    val aiResp = com.example.network.GeminiClient.chat(
+                        contents = listOf(com.example.network.Content(role = "user", parts = listOf(com.example.network.Part(text = prompt)))),
+                        systemPrompt = "Eres AISO IA, mentor de oratoria."
+                    )
+                    if (!aiResp.startsWith("Error:") && aiResp.isNotBlank()) {
+                        finalText = aiResp
+                    }
                 }
+
+                repository.insertAttempt(ExerciseAttempt(
+                    exerciseId = exercise.id,
+                    userText = speechText,
+                    aiFeedback = finalText
+                ))
+                _feedbackState.value = FeedbackState.Success(finalText)
             } catch (e: Exception) {
-                _feedbackState.value = FeedbackState.Error("Error de conexión: ${e.message}")
+                val offlineText = com.example.util.AisoOfflineEngine.evaluateExerciseSpeech(
+                    title = exercise.title,
+                    description = exercise.description,
+                    speechText = speechText
+                )
+                _feedbackState.value = FeedbackState.Success(offlineText)
             }
         }
     }

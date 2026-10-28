@@ -29,27 +29,27 @@ val charadesWords = listOf(
 )
 
 val charadesConstraints = listOf(
-    "Clásico (Libre) ✨",
-    "Sin usar las manos 🚫👐",
-    "Solo con expresiones faciales 😲",
-    "Como si estuvieras en cámara lenta 🐌",
-    "Como un robot 🤖",
-    "Haciendo mímica exagerada 🎭",
-    "Sin mover los pies 👣",
-    "Con un brazo detrás de la espalda 🧍",
-    "Como si pesaras 1000 kg 🐘",
-    "Como si flotaras en el espacio 🚀",
-    "Solo moviendo los ojos y cejas 🤨",
-    "Como si tuvieras mucho frío 🥶",
-    "Como si estuvieras bajo el agua 🌊",
-    "A la máxima velocidad posible ⚡",
-    "De espaldas (solo se ve tu postura) 👤"
+    "Clásico (Libre)",
+    "Sin usar las manos",
+    "Solo con expresiones faciales",
+    "Como si estuvieras en cámara lenta",
+    "Como un robot",
+    "Haciendo mímica exagerada",
+    "Sin mover los pies",
+    "Con un brazo detrás de la espalda",
+    "Como si pesaras 1000 kg",
+    "Como si flotaras en el espacio",
+    "Solo moviendo los ojos y cejas",
+    "Como si tuvieras mucho frío",
+    "Como si estuvieras bajo el agua",
+    "A la máxima velocidad posible",
+    "De espaldas (solo se ve tu postura)"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharadesGameScreen(onBack: () -> Unit) {
-    var gameState by remember { mutableStateOf("start") } // "start", "playing", "finished"
+    var gameState by remember { mutableStateOf("start") }
     var score by remember { mutableStateOf(0) }
     var currentWord by remember { mutableStateOf("") }
     var currentConstraint by remember { mutableStateOf("") }

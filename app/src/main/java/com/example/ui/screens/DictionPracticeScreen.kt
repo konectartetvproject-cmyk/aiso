@@ -7,12 +7,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
@@ -42,6 +45,14 @@ fun DictionPracticeScreen(
     val isAnalyzing by viewModel.isAnalyzing.collectAsState()
     val feedback by viewModel.feedback.collectAsState()
 
+    val practicePhrases = remember {
+        listOf(
+            "Reto de Laura (D final)" to "La libertad de la ciudad depende de nuestra capacidad de decir la verdad con claridad y dignidad.",
+            "Lápiz entre los dientes" to "El orador extraordinario articula cada consonante con precisión, proyectando su voz desde el diafragma.",
+            "Agilidad R y TR" to "Tres tristes tigres tragaban trigo en un trigal mientras el ferrocarril recorría rápido los rieles."
+        )
+    }
+
     var hasPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -63,7 +74,7 @@ fun DictionPracticeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Práctica de Dicción", fontWeight = FontWeight.Bold) },
+                title = { Text("Práctica de Dicción y Articulación", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -80,51 +91,71 @@ fun DictionPracticeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(24.dp)
+                .padding(20.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Graba tu voz y observa cómo se transcribe en tiempo real para evaluar tu pronunciación y dicción.",
-                style = MaterialTheme.typography.bodyLarge,
+                text = "Pronuncia en voz alta o selecciona un ejercicio del libro para evaluar tu articulación fonética.",
+                style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 200.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "Ejercicios recomendados:",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    if (transcription.isEmpty()) {
-                        Text(
-                            text = if (isRecording) "Escuchando..." else "Presiona el micrófono para comenzar a hablar...",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    } else {
-                        Text(
-                            text = transcription,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp, lineHeight = 28.sp),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                items(practicePhrases) { (label, phrase) ->
+                    ElevatedSuggestionChip(
+                        onClick = { viewModel.updateTranscription(phrase) },
+                        label = { Text(label) }
+                    )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = transcription,
+                onValueChange = { viewModel.updateTranscription(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 140.dp),
+                shape = RoundedCornerShape(16.dp),
+                placeholder = {
+                    Text(
+                        if (isRecording) "Escuchando tu pronunciación en tiempo real..."
+                        else "Presiona el micrófono para hablar, o elige una frase arriba para practicar..."
+                    )
+                },
+                label = { Text("Lectura / Transcripción de Voz") }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (transcription.isNotBlank() && !isRecording && !isAnalyzing) {
+                Button(
+                    onClick = { viewModel.analyzeCurrentText() },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Evaluar Dicción y Claridad", fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             if (isAnalyzing) {
                 CircularProgressIndicator(
@@ -149,7 +180,7 @@ fun DictionPracticeScreen(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "Retroalimentación",
+                            text = "Diagnóstico Vocal de AISO",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -158,25 +189,26 @@ fun DictionPracticeScreen(
                         Text(
                             text = feedback!!,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            lineHeight = 22.sp
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
-            
+
             if (error != null) {
                 Text(
                     text = error!!,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -202,11 +234,11 @@ fun DictionPracticeScreen(
                     modifier = Modifier.size(40.dp)
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Text(
-                text = if (isRecording) "Detener" else "Grabar",
+                text = if (isRecording) "Detener Grabación" else "Grabar por Micrófono",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary

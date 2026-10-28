@@ -28,7 +28,7 @@ data class GameWord(val id: Int, val text: String, val isFiller: Boolean)
 fun createSentence(id: Int, text: String, fillerWords: List<String>): GameSentence {
     val rawWords = text.split(" ")
     val gameWords = rawWords.mapIndexed { index, word ->
-        val cleanWord = word.lowercase().replace(Regex("[^a-záéíóúñ]"), "")
+        val cleanWord = word.lowercase().replace(Regex("[^a-zñáéíóú]"), "")
         val isFiller = fillerWords.contains(cleanWord)
         GameWord(index, word, isFiller)
     }
@@ -83,7 +83,7 @@ fun FillerWordsGameScreen(
     
     var showIntro by remember { mutableStateOf(true) }
     var showLevelUp by remember { mutableStateOf(false) }
-    var gameState by remember { mutableStateOf("playing") } // playing, won, lost
+    var gameState by remember { mutableStateOf("playing") }
 
     val currentLevel = fillerGameLevels.getOrNull(currentLevelIndex)
     val currentSentence = currentLevel?.sentences?.getOrNull(currentSentenceIndex)
@@ -94,7 +94,7 @@ fun FillerWordsGameScreen(
             val eliminatedFillers = currentSentence.words.filter { it.isFiller && eliminatedWords.contains(it.id) }.size
             
             if (totalFillers > 0 && eliminatedFillers == totalFillers) {
-                delay(1000) // Wait a second before next sentence
+                delay(1000)
                 if (currentSentenceIndex < currentLevel.sentences.size - 1) {
                     currentSentenceIndex++
                     eliminatedWords = emptySet()
@@ -105,7 +105,6 @@ fun FillerWordsGameScreen(
                     gameState = "won"
                 }
             } else if (totalFillers == 0) {
-                // Failsafe if sentence has no fillers
                 delay(1000)
                 if (currentSentenceIndex < currentLevel.sentences.size - 1) {
                     currentSentenceIndex++
@@ -124,7 +123,7 @@ fun FillerWordsGameScreen(
         AlertDialog(
             onDismissRequest = { },
             title = { Text("¡Nivel ${currentLevelIndex + 1} Completado!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
-            text = { Text("¡Excelente! Has limpiado todas las oraciones del nivel ${currentLevelIndex + 1}. Prepárate para el siguiente nivel, ¡será más difícil!") },
+            text = { Text("¡Excelente! Has limpiado todas las oraciones del nivel ${currentLevelIndex + 1}. Prepárate para el siguiente nivel, ¡es más difícil!") },
             confirmButton = {
                 Button(onClick = { 
                     showLevelUp = false
@@ -132,7 +131,6 @@ fun FillerWordsGameScreen(
                     currentSentenceIndex = 0
                     eliminatedWords = emptySet()
                     errorWords = emptySet()
-                    // Recompensar con una vida al pasar de nivel si tiene menos de 3
                     if (lives < 3) lives++
                 }) {
                     Text("Siguiente Nivel")
@@ -221,7 +219,6 @@ fun FillerWordsGameScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header stats
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -276,8 +273,6 @@ fun FillerWordsGameScreen(
                         currentSentence.words.forEach { word ->
                             val isEliminated = eliminatedWords.contains(word.id)
                             val isError = errorWords.contains(word.id)
-                            
-                            // Don't make punctuation marks clickable by themselves if they are separated
                             val isPunctuation = word.text.matches(Regex("[.,:;!?]"))
                             
                             Box(

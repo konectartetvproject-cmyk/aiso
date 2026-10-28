@@ -4,7 +4,7 @@ data class Exercise(
     val id: String,
     val title: String,
     val description: String,
-    val icon: String // We can map this to an actual Material Icon in the UI
+    val icon: String
 )
 
 val sampleExercises = listOf(

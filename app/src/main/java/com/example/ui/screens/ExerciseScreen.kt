@@ -52,6 +52,8 @@ fun ExerciseScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
+                .navigationBarsPadding()
+                .imePadding()
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -63,7 +65,6 @@ fun ExerciseScreen(
             )
 
             if (feedbackState is FeedbackState.Success || feedbackState is FeedbackState.Error) {
-                // Feedback Mode
                 Text(
                     text = "Feedback del Coach (IA):",
                     style = MaterialTheme.typography.titleMedium,
@@ -101,7 +102,6 @@ fun ExerciseScreen(
                     Text("Volver a Ejercicios", modifier = Modifier.padding(vertical = 8.dp))
                 }
             } else {
-                // Input Mode
                 OutlinedTextField(
                     value = speechText,
                     onValueChange = { speechText = it },

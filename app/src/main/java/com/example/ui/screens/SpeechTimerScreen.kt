@@ -63,10 +63,7 @@ fun SpeechTimerScreen(
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Time Selector (only editable when not running/started)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -85,10 +82,7 @@ fun SpeechTimerScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("$totalTimeMinutes min", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
-
             Spacer(modifier = Modifier.height(32.dp))
-
-            // Timer Display
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -133,10 +127,7 @@ fun SpeechTimerScreen(
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(32.dp))
-
-            // Hint Box
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,10 +151,7 @@ fun SpeechTimerScreen(
                     }
                 }
             }
-
             Spacer(modifier = Modifier.weight(1f))
-
-            // Controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -183,7 +171,6 @@ fun SpeechTimerScreen(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
                 FloatingActionButton(
                     onClick = { viewModel.toggleTimer() },
                     containerColor = MaterialTheme.colorScheme.primary,

@@ -15,7 +15,7 @@ enum class MatchItemType(val icon: String, val color: Long) {
     IDEA("💡", 0xFFFFD54F),
     RELOJ("⏱️", 0xFF81C784),
     NOTAS("📝", 0xFFBA68C8),
-    OJO("👁️", 0xFFFF8A65),
+    OJO("👀", 0xFFFF8A65),
     EMPTY("", 0x00000000)
 }
 
@@ -39,7 +39,6 @@ data class MatchGameState(
 class OratoryMatchViewModel : ViewModel() {
     private val _state = MutableStateFlow(MatchGameState())
     val state: StateFlow<MatchGameState> = _state.asStateFlow()
-
     private val rows = 6
     private val cols = 6
     private var itemIdCounter = 0
@@ -86,7 +85,6 @@ class OratoryMatchViewModel : ViewModel() {
     fun selectItem(row: Int, col: Int) {
         val currentState = _state.value
         if (!currentState.isPlaying || currentState.isGameOver) return
-
         val selected = currentState.selectedItem
         if (selected == null) {
             _state.update { it.copy(selectedItem = Pair(row, col)) }
@@ -119,26 +117,21 @@ class OratoryMatchViewModel : ViewModel() {
     private fun swapItems(r1: Int, c1: Int, r2: Int, c2: Int) {
         val currentState = _state.value
         val grid = currentState.grid.map { it.toMutableList() }.toMutableList()
-
         val item1 = grid[r1][c1]
         val item2 = grid[r2][c2]
-
         grid[r1][c1] = item2.copy(row = r1, col = c1)
         grid[r2][c2] = item1.copy(row = r2, col = c2)
-
         _state.update { it.copy(grid = grid) }
     }
 
     private suspend fun checkMatchesAndDrop(): Boolean {
         var overallMatchFound = false
         var matchFound = true
-
         while (matchFound) {
             delay(300)
             val currentState = _state.value
             val grid = currentState.grid.map { it.toMutableList() }.toMutableList()
             val toRemove = mutableSetOf<Pair<Int, Int>>()
-
             for (r in 0 until rows) {
                 for (c in 0 until cols - 2) {
                     val t1 = grid[r][c].type
@@ -149,7 +142,6 @@ class OratoryMatchViewModel : ViewModel() {
                     }
                 }
             }
-
             for (c in 0 until cols) {
                 for (r in 0 until rows - 2) {
                     val t1 = grid[r][c].type
@@ -160,21 +152,17 @@ class OratoryMatchViewModel : ViewModel() {
                     }
                 }
             }
-
             matchFound = toRemove.isNotEmpty()
             if (matchFound) {
                 overallMatchFound = true
                 var scoreAdd = toRemove.size * 10
                 if (toRemove.size > 3) scoreAdd += 20
-
                 _state.update { it.copy(score = it.score + scoreAdd) }
-
                 for ((r, c) in toRemove) {
                     grid[r][c] = grid[r][c].copy(type = MatchItemType.EMPTY)
                 }
                 _state.update { it.copy(grid = grid) }
                 delay(300)
-
                 for (c in 0 until cols) {
                     for (r in rows - 1 downTo 0) {
                         if (grid[r][c].type == MatchItemType.EMPTY) {
@@ -195,8 +183,8 @@ class OratoryMatchViewModel : ViewModel() {
             }
         }
         
-        _state.update {
-             if (it.moves <= 0 || it.score >= it.targetScore) it.copy(isGameOver = true) else it
+        _state.update { 
+            if (it.moves <= 0 || it.score >= it.targetScore) it.copy(isGameOver = true) else it
         }
         
         return overallMatchFound

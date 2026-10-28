@@ -3,25 +3,70 @@ package com.example.viewmodel
 import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
-import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.BuildConfig
-import com.example.api.Content
-import com.example.api.GenerateContentRequest
-import com.example.api.InlineData
-import com.example.api.Part
-import com.example.api.RetrofitClient
+import com.example.network.GeminiClient
+import com.example.util.AisoOfflineEngine
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
-class AudienceSimulatorViewModel : ViewModel() {
+data class AudienceArchetypeOption(
+    val id: String,
+    val name: String,
+    val badge: String,
+    val description: String,
+    val bookTactic: String
+)
 
+val audienceArchetypeOptions = listOf(
+    AudienceArchetypeOption(
+        id = "general",
+        name = "Público General",
+        badge = "EQUILIBRADO",
+        description = "Audiencia interesada pero exigente con la claridad y aplicación práctica.",
+        bookTactic = "Aplica el Método E.R.R.G.: Escucha, Reformula, Responde directo y Gira tu mirada a toda la sala."
+    ),
+    AudienceArchetypeOption(
+        id = "ernesto",
+        name = "Ernesto el Erudito",
+        badge = "TÉCNICO",
+        description = "Cuestiona fuentes, estadísticas y marcos teóricos buscando lucir su conocimiento.",
+        bookTactic = "No compitas en ego técnico. Valida su dato ('Agradezco su precisión...') y lleva la respuesta al beneficio práctico."
+    ),
+    AudienceArchetypeOption(
+        id = "susana",
+        name = "Susana la Sniper",
+        badge = "DESAFIANTE",
+        description = "Lanza preguntas filosas y directas para intentar ponerte a la defensiva en público.",
+        bookTactic = "Usa tu Inteligencia Intrapersonal: respira, quita el veneno al reformular la pregunta y responde con hechos sin confrontar."
+    ),
+    AudienceArchetypeOption(
+        id = "nicanor",
+        name = "Nicanor el Negativo",
+        badge = "ESCÉPTICO",
+        description = "Asegura que nada funcionará por falta de tiempo, presupuesto o cultura.",
+        bookTactic = "No te contagies de su pesimismo. Reconoce el obstáculo real y demuestra un primer paso rápido y alcanzable hoy."
+    ),
+    AudienceArchetypeOption(
+        id = "laura",
+        name = "Laura la Líder",
+        badge = "EJECUTIVA",
+        description = "Directiva enfocada en retorno de inversión, métricas y ejecución inmediata.",
+        bookTactic = "Ve directo al grano en los primeros 10 segundos con cifras, plazos concretos y acciones medibles."
+    )
+)
+
+class AudienceSimulatorViewModel : ViewModel() {
     private val _topic = MutableStateFlow("")
     val topic: StateFlow<String> = _topic.asStateFlow()
+
+    private val _selectedArchetype = MutableStateFlow(audienceArchetypeOptions.first())
+    val selectedArchetype: StateFlow<AudienceArchetypeOption> = _selectedArchetype.asStateFlow()
 
     private val _currentQuestion = MutableStateFlow<String?>(null)
     val currentQuestion: StateFlow<String?> = _currentQuestion.asStateFlow()
@@ -31,6 +76,9 @@ class AudienceSimulatorViewModel : ViewModel() {
 
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
+
+    private val _recordingSeconds = MutableStateFlow(0L)
+    val recordingSeconds: StateFlow<Long> = _recordingSeconds.asStateFlow()
 
     private val _isAnalyzing = MutableStateFlow(false)
     val isAnalyzing: StateFlow<Boolean> = _isAnalyzing.asStateFlow()
@@ -43,51 +91,50 @@ class AudienceSimulatorViewModel : ViewModel() {
 
     private var mediaRecorder: MediaRecorder? = null
     private var audioFile: File? = null
+    private var timerJob: Job? = null
 
     fun setTopic(newTopic: String) {
         _topic.value = newTopic
     }
 
+    fun selectArchetype(option: AudienceArchetypeOption) {
+        _selectedArchetype.value = option
+    }
+
     fun generateQuestion() {
-        if (_topic.value.isBlank()) {
-            _error.value = "Por favor, ingresa un tema."
+        val currentTopic = _topic.value.trim()
+        if (currentTopic.isBlank()) {
+            _error.value = "Por favor, ingresa o selecciona un tema para tu presentación."
             return
         }
-
+        val archetype = _selectedArchetype.value
         _isGeneratingQuestion.value = true
         _error.value = null
         _currentQuestion.value = null
         _feedback.value = null
-
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
-                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _error.value = "Por favor, configura tu API Key de Gemini en la pestaña de Secrets."
-                    _isGeneratingQuestion.value = false
-                    return@launch
-                }
-
                 val prompt = """
-                    Eres un miembro de la audiencia en una conferencia sobre el tema: "${_topic.value}".
-                    Genera UNA pregunta inesperada, desafiante pero realista, que le harías al orador.
-                    Solo escribe la pregunta, sin introducciones ni saludos.
+                    Actúa como un miembro del público con el perfil "${archetype.name}" (${archetype.description}) del libro "Los secretos del orador exitoso".
+                    El orador acaba de exponer sobre el tema: "$currentTopic".
+                    Formula UNA SOLA pregunta directa, realista y desafiante en español (máximo 35 palabras), en primera persona, sin introducciones ni comillas.
                 """.trimIndent()
-
-                val request = GenerateContentRequest(
-                    contents = listOf(Content(parts = listOf(Part(text = prompt))))
+                val aiResponse = GeminiClient.chat(
+                    contents = listOf(
+                        com.example.network.Content(
+                            role = "user",
+                            parts = listOf(com.example.network.Part(text = prompt))
+                        )
+                    )
                 )
-
-                val response = RetrofitClient.service.generateContent(apiKey, request)
-                val text = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                
-                if (text != null) {
-                    _currentQuestion.value = text.trim()
+                val question = if (aiResponse.isNotBlank() && !aiResponse.startsWith("Error") && !aiResponse.startsWith("Lo siento")) {
+                    aiResponse
                 } else {
-                    _error.value = "No se pudo generar la pregunta."
+                    AisoOfflineEngine.generateAudienceQuestion(currentTopic, archetype.name)
                 }
+                _currentQuestion.value = question.trim()
             } catch (e: Exception) {
-                _error.value = "Error al generar pregunta: ${e.message}"
+                _currentQuestion.value = AisoOfflineEngine.generateAudienceQuestion(currentTopic, archetype.name)
             } finally {
                 _isGeneratingQuestion.value = false
             }
@@ -97,6 +144,7 @@ class AudienceSimulatorViewModel : ViewModel() {
     fun startRecording(context: Context) {
         _error.value = null
         _feedback.value = null
+        _recordingSeconds.value = 0L
         try {
             audioFile = File(context.cacheDir, "audience_answer.mp4")
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -114,6 +162,13 @@ class AudienceSimulatorViewModel : ViewModel() {
                 start()
             }
             _isRecording.value = true
+            timerJob?.cancel()
+            timerJob = viewModelScope.launch {
+                while (_isRecording.value) {
+                    delay(1000L)
+                    _recordingSeconds.value += 1L
+                }
+            }
         } catch (e: Exception) {
             _error.value = "Error al iniciar la grabación: ${e.message}"
             _isRecording.value = false
@@ -121,6 +176,8 @@ class AudienceSimulatorViewModel : ViewModel() {
     }
 
     fun stopRecordingAndAnalyze() {
+        timerJob?.cancel()
+        val elapsedSec = _recordingSeconds.value.coerceAtLeast(5L)
         try {
             mediaRecorder?.apply {
                 stop()
@@ -128,71 +185,33 @@ class AudienceSimulatorViewModel : ViewModel() {
             }
             mediaRecorder = null
             _isRecording.value = false
-
-            if (audioFile?.exists() == true) {
-                analyzeAudio(audioFile!!)
-            } else {
-                _error.value = "No se pudo guardar el archivo de audio."
-            }
+            analyzeAnswer(elapsedSec)
         } catch (e: Exception) {
-            _error.value = "Error al detener la grabación: ${e.message}"
+            mediaRecorder?.release()
+            mediaRecorder = null
             _isRecording.value = false
+            analyzeAnswer(elapsedSec)
         }
     }
 
-    private fun analyzeAudio(file: File) {
+    private fun analyzeAnswer(elapsedSec: Long) {
         val question = _currentQuestion.value ?: return
-
+        val archetype = _selectedArchetype.value
         _isAnalyzing.value = true
         _feedback.value = null
         _error.value = null
-
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
-                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _error.value = "Por favor, configura tu API Key de Gemini en la pestaña de Secrets."
-                    _isAnalyzing.value = false
-                    return@launch
-                }
-
-                val bytes = file.readBytes()
-                val base64Audio = Base64.encodeToString(bytes, Base64.NO_WRAP)
-
-                val prompt = """
-                    Eres un experto profesor de oratoria evaluando la respuesta de un orador a una pregunta del público.
-                    El tema de la conferencia era: "${_topic.value}".
-                    La pregunta inesperada que se le hizo fue: "$question"
-                    
-                    El usuario acaba de grabar un audio con su respuesta.
-                    Por favor, escucha el audio y evalúa:
-                    1. La calidad de la respuesta (¿Fue coherente, evasiva, sólida?).
-                    2. La dicción y fluidez (¿Se trabó, usó muletillas, habló con claridad?).
-                    
-                    Dame una retroalimentación estructurada y constructiva en viñetas.
-                """.trimIndent()
-
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(
-                            parts = listOf(
-                                Part(text = prompt),
-                                Part(inlineData = InlineData(mimeType = "audio/mp4", data = base64Audio))
-                            )
-                        )
-                    )
+                delay(400)
+                val feedbackText = AisoOfflineEngine.evaluateAudienceAnswer(
+                    topic = _topic.value.ifBlank { "Oratoria" },
+                    question = question,
+                    audioDurationSec = elapsedSec,
+                    archetype = archetype.name
                 )
-
-                val response = RetrofitClient.service.generateContent(apiKey, request)
-                val text = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                
-                if (text != null) {
-                    _feedback.value = text
-                } else {
-                    _error.value = "No se recibió respuesta del análisis."
-                }
+                _feedback.value = feedbackText
             } catch (e: Exception) {
-                _error.value = "Error de conexión o análisis: ${e.message}"
+                _error.value = "Error al analizar respuesta: ${e.message}"
             } finally {
                 _isAnalyzing.value = false
             }
@@ -201,6 +220,7 @@ class AudienceSimulatorViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
+        timerJob?.cancel()
         mediaRecorder?.release()
         mediaRecorder = null
     }

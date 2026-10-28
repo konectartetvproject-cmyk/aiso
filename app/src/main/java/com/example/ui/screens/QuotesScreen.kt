@@ -1,646 +1,1880 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.core.*
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.graphics.*
+import android.speech.tts.TextToSpeech
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.cos
-import kotlin.math.sin
-import android.content.Context
-import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.Canvas as AndroidCanvas
-import android.graphics.LinearGradient
-import android.graphics.Paint
-import android.graphics.Shader
-import android.graphics.Typeface
-import android.text.Layout
-import android.text.StaticLayout
-import android.text.TextPaint
 import androidx.core.content.FileProvider
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.material.icons.filled.Share
-import java.io.File
-import java.io.FileOutputStream
-import androidx.compose.ui.graphics.toArgb
-import kotlinx.coroutines.CoroutineScope
+import com.example.model.Affirmation
+import com.example.model.QuotesCatalog
+import com.example.model.sampleAffirmations
+import com.example.ui.theme.*
+import com.example.viewmodel.OratoryQuote
+import com.example.viewmodel.QuotesViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.foundation.border
+import java.io.File
+import java.io.FileOutputStream
+import java.util.Locale
+import kotlin.random.Random
 
-data class Quote(
-    val text: String,
-    val author: String,
-    val category: String,
-    val colors: List<Color>
-)
-
-val quotesList = listOf(
-    // Oratoria
-    Quote("El que sabe pensar pero no sabe expresar lo que piensa, está en el mismo nivel del que no sabe pensar.", "Pericles", "Oratoria", listOf(Color(0xFF1E3C72), Color(0xFF2A5298))),
-    Quote("La oratoria es el arte de persuadir.", "Cicerón", "Oratoria", listOf(Color(0xFF8E2DE2), Color(0xFF4A00E0))),
-    Quote("No hay nada tan increíble que la oratoria no pueda volverlo aceptable.", "Cicerón", "Oratoria", listOf(Color(0xFFFF416C), Color(0xFFFF4B2B))),
-    Quote("Un discurso es como una historia de amor. Cualquier tonto puede empezarla, pero para terminarla se requiere de mucha habilidad.", "Lord Mancroft", "Oratoria", listOf(Color(0xFF00B4DB), Color(0xFF0083B0))),
-    Quote("El secreto de un buen discurso es tener un buen comienzo y un buen final, y luego tratar de que ambos estén lo más cerca posible.", "George Burns", "Oratoria", listOf(Color(0xFFFDC830), Color(0xFFF37335))),
-    Quote("Habla para que yo te conozca.", "Sócrates", "Oratoria", listOf(Color(0xFF00C9FF), Color(0xFF92FE9D))),
-    Quote("El éxito de tu presentación no se juzgará por el conocimiento que envíes, sino por el que el oyente reciba.", "Lilly Walters", "Oratoria", listOf(Color(0xFFf12711), Color(0xFFf5af19))),
-    
-    // Motivacional
-    Quote("No dejes que el miedo a equivocarte te impida expresar tu genialidad.", "Desconocido", "Motivacional", listOf(Color(0xFF11998E), Color(0xFF38EF7D))),
-    Quote("El éxito no es el final, el fracaso no es fatal: es el coraje para continuar lo que cuenta.", "Winston Churchill", "Motivacional", listOf(Color(0xFFff9966), Color(0xFFff5e62))),
-    Quote("Cree que puedes y estarás a mitad de camino.", "Theodore Roosevelt", "Motivacional", listOf(Color(0xFF4CB8C4), Color(0xFF3CD3AD))),
-    Quote("No mires el reloj; haz lo que él hace. Sigue moviéndote.", "Sam Levenson", "Motivacional", listOf(Color(0xFF834D9B), Color(0xFFD04ED6))),
-    
-    // Ley de Atracción
-    Quote("Lo que piensas, lo serás. Lo que sientas, lo atraerás. Lo que imagines, lo crearás.", "Buda", "Ley de Atracción", listOf(Color(0xFF834D9B), Color(0xFFD04ED6))),
-    Quote("Todo lo que somos es el resultado de lo que hemos pensado.", "Buda", "Ley de Atracción", listOf(Color(0xFF00C9FF), Color(0xFF92FE9D))),
-    Quote("Tus pensamientos son las semillas de lo que plantarás en tu vida.", "Desconocido", "Ley de Atracción", listOf(Color(0xFF1E3C72), Color(0xFF2A5298))),
-    Quote("Pide, cree, recibe.", "El Secreto", "Ley de Atracción", listOf(Color(0xFF8E2DE2), Color(0xFF4A00E0))),
-    
-    // Fe
-    Quote("La fe es dar el primer paso incluso cuando no ves toda la escalera.", "Martin Luther King Jr.", "Fe", listOf(Color(0xFFFDC830), Color(0xFFF37335))),
-    Quote("Creer en ti mismo es el primer secreto del éxito.", "Ralph Waldo Emerson", "Fe", listOf(Color(0xFF56AB2F), Color(0xFFA8E063))),
-    Quote("Donde hay fe, hay amor; donde hay amor, hay paz.", "Proverbio", "Fe", listOf(Color(0xFFDA22FF), Color(0xFF9733EE))),
-    Quote("No pierdas la esperanza. Cuando se pone el sol, salen las estrellas.", "Desconocido", "Fe", listOf(Color(0xFF00C9FF), Color(0xFF92FE9D))),
-    
-    // Negocios
-    Quote("El secreto del éxito en los negocios está en detectar hacia dónde va el mundo y llegar ahí primero.", "Bill Gates", "Negocios", listOf(Color(0xFF141E30), Color(0xFF243B55))),
-    Quote("Tu cliente más insatisfecho es tu mejor fuente de aprendizaje.", "Bill Gates", "Negocios", listOf(Color(0xFF00B4DB), Color(0xFF0083B0))),
-    Quote("Las oportunidades de negocio son como los autobuses; siempre hay otro en camino.", "Richard Branson", "Negocios", listOf(Color(0xFF1E3C72), Color(0xFF2A5298))),
-    Quote("El riesgo más grande es no tomar ninguno.", "Mark Zuckerberg", "Negocios", listOf(Color(0xFFFF416C), Color(0xFFFF4B2B))),
-    
-    // Liderazgo
-    Quote("Un líder es alguien que conoce el camino, recorre el camino y muestra el camino.", "John C. Maxwell", "Liderazgo", listOf(Color(0xFFDA22FF), Color(0xFF9733EE))),
-    Quote("La innovación distingue a un líder de un seguidor.", "Steve Jobs", "Liderazgo", listOf(Color(0xFFf12711), Color(0xFFf5af19))),
-    Quote("Si tus acciones inspiran a otros a soñar más, aprender más, hacer más y ser más, eres un líder.", "John Quincy Adams", "Liderazgo", listOf(Color(0xFF11998E), Color(0xFF38EF7D))),
-    Quote("El liderazgo es la capacidad de traducir la visión en realidad.", "Warren Bennis", "Liderazgo", listOf(Color(0xFF834D9B), Color(0xFFD04ED6))),
-
-    // Biblia
-    Quote("La blanda respuesta quita la ira; mas la palabra áspera hace subir el furor.", "Proverbios 15:1", "Biblia", listOf(Color(0xFF8E2DE2), Color(0xFF4A00E0))),
-    Quote("Manzana de oro con figuras de plata es la palabra dicha como conviene.", "Proverbios 25:11", "Biblia", listOf(Color(0xFFFDC830), Color(0xFFF37335))),
-    Quote("Ninguna palabra corrompida salga de vuestra boca, sino la que sea buena para la necesaria edificación.", "Efesios 4:29", "Biblia", listOf(Color(0xFF11998E), Color(0xFF38EF7D))),
-    Quote("Airaos, pero no pequéis; no se ponga el sol sobre vuestro enojo.", "Efesios 4:26", "Biblia", listOf(Color(0xFF00C9FF), Color(0xFF92FE9D))),
-    Quote("El que guarda su boca y su lengua, su alma guarda de angustias.", "Proverbios 21:23", "Biblia", listOf(Color(0xFFff9966), Color(0xFFff5e62))),
-    Quote("Porque no nos ha dado Dios espíritu de cobardía, sino de poder, de amor y de dominio propio.", "2 Timoteo 1:7", "Biblia", listOf(Color(0xFF4CB8C4), Color(0xFF3CD3AD)))
-)
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun QuotesScreen(onBack: () -> Unit, showBackButton: Boolean = true) {
-    val categories = listOf("Motivacional", "Oratoria", "Ley de Atracción", "Fe", "Negocios", "Liderazgo", "Biblia")
-    var selectedCategory by remember { mutableStateOf(categories[0]) }
-    
-    val filteredQuotes = remember(selectedCategory) {
-        quotesList.filter { it.category == selectedCategory }
-    }
-
-    val pagerState = rememberPagerState(pageCount = { filteredQuotes.size })
-
-    LaunchedEffect(selectedCategory) {
-        pagerState.scrollToPage(0)
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { page ->
-            val quote = filteredQuotes[page]
-            QuoteCard(quote = quote)
-        }
-        
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-        ) {
-            if (showBackButton) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
-                    }
-                    Text("Frases", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            
-            androidx.compose.foundation.lazy.LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(categories.size) { index ->
-                    val category = categories[index]
-                    Surface(
-                        modifier = Modifier.clickable { selectedCategory = category },
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                        color = if (selectedCategory == category) Color.White.copy(alpha = 0.2f) else Color.Transparent,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedCategory == category) Color.White else Color.White.copy(alpha = 0.3f))
-                    ) {
-                        Text(
-                            text = category,
-                            color = if (selectedCategory == category) Color.White else Color.White.copy(alpha = 0.7f),
-                            fontWeight = if (selectedCategory == category) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
+enum class InspirationTab {
+    FRASES,
+    AFIRMACIONES,
+    TIPS
 }
 
 @Composable
-fun QuoteCard(quote: Quote) {
-    val randomSeed = Math.abs(quote.text.hashCode())
-    val random = java.util.Random(randomSeed.toLong())
+fun QuotesScreen(
+    onBack: () -> Unit,
+    showBackButton: Boolean = true,
+    initialTab: InspirationTab = InspirationTab.FRASES,
+    viewModel: QuotesViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    onPracticeAffirmation: ((String) -> Unit)? = null
+) {
+    if (showBackButton) {
+        BackHandler { onBack() }
+    }
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // TTS para escuchar la entonación de cualquier frase o afirmación
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    DisposableEffect(context) {
+        var instance: TextToSpeech? = null
+        instance = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                instance?.language = Locale("es", "ES")
+                instance?.setSpeechRate(0.92f)
+            }
+        }
+        tts = instance
+        onDispose {
+            instance?.stop()
+            instance?.shutdown()
+        }
+    }
+
+    var currentTab by remember { mutableStateOf(initialTab) }
+    var isCatalogMode by remember { mutableStateOf(false) }
+    var showSearchBar by remember { mutableStateOf(false) }
+
+    val quotes by viewModel.quotes.collectAsState()
+    val selectedQuoteCategory by viewModel.selectedCategory.collectAsState()
+    val selectedAuthor by viewModel.selectedAuthor.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+
+    val quoteCategories = QuotesCatalog.categories
+
+    val affirmationCategories = remember {
+        listOf("Todas") + sampleAffirmations.map { it.category }.distinct()
+    }
+    var selectedAffirmationCategory by remember { mutableStateOf("Todas") }
+
+    val tipCategories = remember {
+        listOf("Todas") + recommendationsList.map { it.category }.distinct()
+    }
+    var selectedTipCategory by remember { mutableStateOf("Todas") }
+
+    // Lista de autores disponibles dentro de la categoría actual
+    val availableAuthors = remember(quotes, selectedQuoteCategory) {
+        val baseList = when (selectedQuoteCategory) {
+            "Todas" -> quotes
+            "Favoritas ❤️" -> quotes.filter { it.isFavorite }
+            else -> quotes.filter { it.category == selectedQuoteCategory }
+        }
+        listOf("Todos") + baseList.map { it.author }.distinct()
+    }
+
+    val filteredQuotes = remember(quotes, selectedQuoteCategory, selectedAuthor, searchQuery) {
+        quotes.filter { quote ->
+            val matchesCategory = when (selectedQuoteCategory) {
+                "Todas" -> true
+                "Favoritas ❤️" -> quote.isFavorite
+                else -> quote.category == selectedQuoteCategory
+            }
+            val matchesAuthor = selectedAuthor == "Todos" || quote.author == selectedAuthor
+            val query = searchQuery.trim().lowercase()
+            val matchesSearch = query.isEmpty() ||
+                quote.text.lowercase().contains(query) ||
+                quote.author.lowercase().contains(query) ||
+                quote.source.lowercase().contains(query) ||
+                quote.category.lowercase().contains(query) ||
+                quote.usageTip.lowercase().contains(query)
+
+            matchesCategory && matchesAuthor && matchesSearch
+        }
+    }
+
+    val filteredAffirmations = remember(sampleAffirmations, selectedAffirmationCategory, searchQuery) {
+        val query = searchQuery.trim().lowercase()
+        sampleAffirmations.filter { aff ->
+            val matchesCategory = selectedAffirmationCategory == "Todas" || aff.category == selectedAffirmationCategory
+            val matchesSearch = query.isEmpty() ||
+                aff.title.lowercase().contains(query) ||
+                aff.text.lowercase().contains(query) ||
+                aff.category.lowercase().contains(query)
+            matchesCategory && matchesSearch
+        }
+    }
+
+    val filteredTips = remember(recommendationsList, selectedTipCategory, searchQuery) {
+        val query = searchQuery.trim().lowercase()
+        recommendationsList.filter { tip ->
+            val matchesCategory = selectedTipCategory == "Todas" || tip.category == selectedTipCategory
+            val matchesSearch = query.isEmpty() ||
+                tip.title.lowercase().contains(query) ||
+                tip.text.lowercase().contains(query) ||
+                tip.category.lowercase().contains(query)
+            matchesCategory && matchesSearch
+        }
+    }
+
+    val quotesPagerState = rememberPagerState(pageCount = { filteredQuotes.size })
+    val affirmationsPagerState = rememberPagerState(pageCount = { filteredAffirmations.size })
+    val tipsPagerState = rememberPagerState(pageCount = { filteredTips.size })
+
+    LaunchedEffect(selectedQuoteCategory, selectedAuthor, searchQuery) {
+        if (filteredQuotes.isNotEmpty()) quotesPagerState.scrollToPage(0)
+    }
+
+    LaunchedEffect(selectedAffirmationCategory, searchQuery) {
+        if (filteredAffirmations.isNotEmpty()) affirmationsPagerState.scrollToPage(0)
+    }
+
+    LaunchedEffect(selectedTipCategory, searchQuery) {
+        if (filteredTips.isNotEmpty()) tipsPagerState.scrollToPage(0)
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(quote.colors))
+            .background(Color(0xFF0B101E))
     ) {
-        // Decorative background elements
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val canvasWidth = size.width
-            val canvasHeight = size.height
-            
-            when (quote.category) {
-                "Oratoria" -> {
-                    val path = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(0f, canvasHeight * 0.4f)
-                        cubicTo(
-                            canvasWidth * 0.25f, canvasHeight * 0.3f, 
-                            canvasWidth * 0.75f, canvasHeight * 0.5f, 
-                            canvasWidth, canvasHeight * 0.4f
+        // Contenido Principal: Modo Historia (Swipe) o Modo Biblioteca (Catálogo)
+        when (currentTab) {
+            InspirationTab.FRASES -> {
+                if (filteredQuotes.isEmpty()) {
+                    EmptyInspirationState(
+                        message = if (selectedQuoteCategory == "Favoritas ❤️") {
+                            "Aún no has marcado frases favoritas ❤️.\nToca el corazón en cualquier frase para guardarla aquí."
+                        } else {
+                            "No se encontraron frases con esos filtros."
+                        },
+                        onResetFilters = {
+                            viewModel.selectCategory("Todas")
+                            viewModel.selectAuthor("Todos")
+                            viewModel.setSearchQuery("")
+                        }
+                    )
+                } else if (isCatalogMode) {
+                    QuotesCatalogListView(
+                        quotes = filteredQuotes,
+                        onSelectQuote = { index ->
+                            isCatalogMode = false
+                            coroutineScope.launch {
+                                quotesPagerState.scrollToPage(index)
+                            }
+                        },
+                        onToggleFavorite = { id -> viewModel.toggleFavorite(id) },
+                        onSpeakQuote = { quote ->
+                            tts?.speak("${quote.text}. Por ${quote.author}", TextToSpeech.QUEUE_FLUSH, null, quote.id)
+                        }
+                    )
+                } else {
+                    HorizontalPager(
+                        state = quotesPagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        val quote = filteredQuotes[page]
+                        QuoteStoryPage(
+                            quote = quote,
+                            onToggleFavorite = { viewModel.toggleFavorite(quote.id) },
+                            onSpeak = {
+                                tts?.speak(
+                                    "${quote.text}. ${quote.author}.",
+                                    TextToSpeech.QUEUE_FLUSH,
+                                    null,
+                                    quote.id
+                                )
+                            }
                         )
-                        lineTo(canvasWidth, 0f)
-                        lineTo(0f, 0f)
-                        close()
                     }
-                    drawPath(path, color = Color.White.copy(alpha = 0.15f))
-                    
-                    val path2 = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(0f, canvasHeight)
-                        cubicTo(
-                            canvasWidth * 0.3f, canvasHeight * 0.8f, 
-                            canvasWidth * 0.6f, canvasHeight * 0.9f, 
-                            canvasWidth, canvasHeight * 0.75f
-                        )
-                        lineTo(canvasWidth, canvasHeight)
-                        close()
-                    }
-                    drawPath(path2, color = Color.White.copy(alpha = 0.1f))
                 }
-                "Motivacional" -> {
-                    for (i in 0..11) {
-                        rotate(i * 30f) {
-                            drawRoundRect(
-                                color = Color.White.copy(alpha = 0.05f),
-                                topLeft = Offset(canvasWidth / 2 - 20f, -canvasHeight * 0.2f),
-                                size = androidx.compose.ui.geometry.Size(40f, canvasHeight * 1.4f),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(20f, 20f)
+            }
+            InspirationTab.AFIRMACIONES -> {
+                if (filteredAffirmations.isEmpty()) {
+                    EmptyInspirationState(
+                        message = "No hay afirmaciones que coincidan con la búsqueda.",
+                        onResetFilters = {
+                            selectedAffirmationCategory = "Todas"
+                            viewModel.setSearchQuery("")
+                        }
+                    )
+                } else {
+                    HorizontalPager(
+                        state = affirmationsPagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        val affirmation = filteredAffirmations[page]
+                        AffirmationStoryPage(
+                            affirmation = affirmation,
+                            onPractice = { onPracticeAffirmation?.invoke(affirmation.id) },
+                            onSpeak = {
+                                tts?.speak(affirmation.text, TextToSpeech.QUEUE_FLUSH, null, affirmation.id)
+                            }
+                        )
+                    }
+                }
+            }
+            InspirationTab.TIPS -> {
+                if (filteredTips.isEmpty()) {
+                    EmptyInspirationState(
+                        message = "No hay tips en esta categoría.",
+                        onResetFilters = {
+                            selectedTipCategory = "Todas"
+                            viewModel.setSearchQuery("")
+                        }
+                    )
+                } else {
+                    HorizontalPager(
+                        state = tipsPagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        val tip = filteredTips[page]
+                        TipStoryPage(tip = tip)
+                    }
+                }
+            }
+        }
+
+        // Overlay Superior con diseño unificado de Historias + Buscador + Filtros de Autor
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.Black.copy(alpha = 0.82f),
+                            Color.Black.copy(alpha = 0.45f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .statusBarsPadding()
+                .padding(bottom = 12.dp)
+        ) {
+            // Rayitas de progreso segmentadas (Instagram Story bars)
+            val currentItemCount = when (currentTab) {
+                InspirationTab.FRASES -> filteredQuotes.size
+                InspirationTab.AFIRMACIONES -> filteredAffirmations.size
+                InspirationTab.TIPS -> filteredTips.size
+            }
+            val currentPage = when (currentTab) {
+                InspirationTab.FRASES -> quotesPagerState.currentPage
+                InspirationTab.AFIRMACIONES -> affirmationsPagerState.currentPage
+                InspirationTab.TIPS -> tipsPagerState.currentPage
+            }
+
+            if (currentItemCount > 0 && !isCatalogMode) {
+                val totalBars = currentItemCount.coerceAtMost(16)
+                val currentBarIndex = (currentPage * totalBars) / currentItemCount.coerceAtLeast(1)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    repeat(totalBars) { index ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(3.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(
+                                    if (index <= currentBarIndex) AmberGold
+                                    else Color.White.copy(alpha = 0.28f)
+                                )
+                        )
+                    }
+                }
+            }
+
+            // Barra superior: Botón volver + Selector de 3 pestañas + Buscador + Toggle Biblioteca/Historia + Contador
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (showBackButton) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.55f))
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+
+                    // Selector de 3 Secciones (Pills Switch)
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.Black.copy(alpha = 0.65f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                    ) {
+                        Row(modifier = Modifier.padding(3.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (currentTab == InspirationTab.FRASES) AmberGold else Color.Transparent)
+                                    .clickable { currentTab = InspirationTab.FRASES }
+                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.FormatQuote,
+                                        contentDescription = null,
+                                        tint = if (currentTab == InspirationTab.FRASES) MidnightIndigo else Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = "Frases",
+                                        color = if (currentTab == InspirationTab.FRASES) MidnightIndigo else Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (currentTab == InspirationTab.AFIRMACIONES) AmberGold else Color.Transparent)
+                                    .clickable {
+                                        currentTab = InspirationTab.AFIRMACIONES
+                                        isCatalogMode = false
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Favorite,
+                                        contentDescription = null,
+                                        tint = if (currentTab == InspirationTab.AFIRMACIONES) MidnightIndigo else Color.White,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = "Afirmaciones",
+                                        color = if (currentTab == InspirationTab.AFIRMACIONES) MidnightIndigo else Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (currentTab == InspirationTab.TIPS) AmberGold else Color.Transparent)
+                                    .clickable {
+                                        currentTab = InspirationTab.TIPS
+                                        isCatalogMode = false
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lightbulb,
+                                        contentDescription = null,
+                                        tint = if (currentTab == InspirationTab.TIPS) MidnightIndigo else Color.White,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = "Tips",
+                                        color = if (currentTab == InspirationTab.TIPS) MidnightIndigo else Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Acciones derechas: Buscar + Alternar Vista Catálogo + Contador
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    IconButton(
+                        onClick = { showSearchBar = !showSearchBar },
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(if (showSearchBar || searchQuery.isNotEmpty()) AmberGold else Color.Black.copy(alpha = 0.55f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Buscar frase o autor",
+                            tint = if (showSearchBar || searchQuery.isNotEmpty()) MidnightIndigo else Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    if (currentTab == InspirationTab.FRASES) {
+                        IconButton(
+                            onClick = { isCatalogMode = !isCatalogMode },
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(if (isCatalogMode) AmberGold else Color.Black.copy(alpha = 0.55f))
+                        ) {
+                            Icon(
+                                imageVector = if (isCatalogMode) Icons.Default.ViewCarousel else Icons.Default.ViewList,
+                                contentDescription = if (isCatalogMode) "Modo Historias" else "Ver Catálogo Completo",
+                                tint = if (isCatalogMode) MidnightIndigo else Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .padding(horizontal = 8.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            text = if (isCatalogMode) "${currentItemCount}" else "${if (currentItemCount == 0) 0 else currentPage + 1}/$currentItemCount",
+                            color = AmberGold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // Barra de búsqueda desplegable
+            AnimatedVisibility(visible = showSearchBar) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.setSearchQuery(it) },
+                    placeholder = {
+                        Text(
+                            "Buscar por autor, libro, película, tema o palabra...",
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null, tint = AmberGold)
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                Icon(Icons.Default.Close, contentDescription = "Limpiar búsqueda", tint = Color.White)
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(20.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = Color.Black.copy(alpha = 0.7f),
+                        unfocusedContainerColor = Color.Black.copy(alpha = 0.55f),
+                        focusedBorderColor = AmberGold,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                )
+            }
+
+            // Carrusel horizontal de áreas / categorías
+            val activeCategories = when (currentTab) {
+                InspirationTab.FRASES -> quoteCategories
+                InspirationTab.AFIRMACIONES -> affirmationCategories
+                InspirationTab.TIPS -> tipCategories
+            }
+            val activeSelected = when (currentTab) {
+                InspirationTab.FRASES -> selectedQuoteCategory
+                InspirationTab.AFIRMACIONES -> selectedAffirmationCategory
+                InspirationTab.TIPS -> selectedTipCategory
+            }
+
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(activeCategories) { category ->
+                    val isSelected = activeSelected == category
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(if (isSelected) Color.White else Color.Black.copy(alpha = 0.55f))
+                            .border(
+                                width = if (isSelected) 0.dp else 1.dp,
+                                color = Color.White.copy(alpha = 0.25f),
+                                shape = RoundedCornerShape(18.dp)
+                            )
+                            .clickable {
+                                when (currentTab) {
+                                    InspirationTab.FRASES -> viewModel.selectCategory(category)
+                                    InspirationTab.AFIRMACIONES -> selectedAffirmationCategory = category
+                                    InspirationTab.TIPS -> selectedTipCategory = category
+                                }
+                            }
+                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = category,
+                            color = if (isSelected) Color.Black else Color.White,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
+            // Segundo carrusel de Autores / Orígenes cuando estamos en la pestaña FRASES
+            if (currentTab == InspirationTab.FRASES && availableAuthors.size > 2) {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(availableAuthors) { author ->
+                        val isAuthorSelected = selectedAuthor == author
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(
+                                    if (isAuthorSelected) AmberGold.copy(alpha = 0.9f)
+                                    else Color.White.copy(alpha = 0.12f)
+                                )
+                                .clickable { viewModel.selectAuthor(author) }
+                                .padding(horizontal = 11.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (author == "Todos") "✍️ Todos los autores" else author,
+                                color = if (isAuthorSelected) MidnightIndigo else Color.White.copy(alpha = 0.9f),
+                                fontWeight = if (isAuthorSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 11.sp
                             )
                         }
                     }
                 }
-                "Ley de Atracción" -> {
-                    for (i in 1..4) {
-                        drawCircle(
-                            color = Color.White.copy(alpha = 0.05f),
-                            radius = i * 200f,
-                            center = Offset(canvasWidth / 2, canvasHeight / 2),
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
-                        )
-                    }
-                    for (i in 0..15) {
-                        drawCircle(
-                            color = Color.White.copy(alpha = 0.6f),
-                            radius = random.nextFloat() * 12f + 4f,
-                            center = Offset(random.nextFloat() * canvasWidth, random.nextFloat() * canvasHeight)
-                        )
-                    }
-                }
-                "Fe" -> {
-                    val centerTop = Offset(canvasWidth / 2, -100f)
-                    for (i in 0..8) {
-                        val angle = (i * 15 - 60) * (Math.PI / 180f)
-                        val endX = centerTop.x + Math.sin(angle).toFloat() * canvasHeight * 1.5f
-                        val endY = centerTop.y + Math.cos(angle).toFloat() * canvasHeight * 1.5f
-                        drawLine(
-                            color = Color.White.copy(alpha = 0.15f),
-                            start = centerTop,
-                            end = Offset(endX.toFloat(), endY.toFloat()),
-                            strokeWidth = random.nextFloat() * 60f + 20f
-                        )
-                    }
-                }
-                "Negocios" -> {
-                    val step = 150f
-                    var x = 0f
-                    while (x < canvasWidth) {
-                        drawLine(
-                            color = Color.White.copy(alpha = 0.1f),
-                            start = Offset(x, 0f),
-                            end = Offset(x, canvasHeight),
-                            strokeWidth = 2f
-                        )
-                        x += step
-                    }
-                    var y = 0f
-                    while (y < canvasHeight) {
-                        drawLine(
-                            color = Color.White.copy(alpha = 0.1f),
-                            start = Offset(0f, y),
-                            end = Offset(canvasWidth, y),
-                            strokeWidth = 2f
-                        )
-                        y += step
-                    }
-                    val polyPath = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(canvasWidth * 0.8f, canvasHeight * 0.2f)
-                        lineTo(canvasWidth, canvasHeight * 0.5f)
-                        lineTo(canvasWidth * 0.6f, canvasHeight * 0.7f)
-                        close()
-                    }
-                    drawPath(polyPath, color = Color.White.copy(alpha = 0.15f))
-                }
-                "Liderazgo" -> {
-                    for (i in -2..5) {
-                        val startY = i * 400f
-                        val path = androidx.compose.ui.graphics.Path().apply {
-                            moveTo(0f, startY)
-                            lineTo(canvasWidth, startY - canvasWidth)
-                            lineTo(canvasWidth, startY - canvasWidth + 150f)
-                            lineTo(0f, startY + 150f)
-                            close()
-                        }
-                        drawPath(path, color = Color.White.copy(alpha = 0.08f))
-                    }
-                }
-                "Biblia" -> {
-                    val centerOffset = Offset(canvasWidth / 2, canvasHeight / 2)
-                    for (i in 0..3) {
-                        drawCircle(
-                            color = Color.White.copy(alpha = 0.05f),
-                            radius = (i * 200f) + 150f,
-                            center = centerOffset,
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
-                        )
-                    }
-                    val path = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(canvasWidth * 0.3f, canvasHeight * 0.8f)
-                        quadraticBezierTo(canvasWidth * 0.5f, canvasHeight * 0.85f, canvasWidth * 0.7f, canvasHeight * 0.8f)
-                        lineTo(canvasWidth * 0.7f, canvasHeight)
-                        lineTo(canvasWidth * 0.3f, canvasHeight)
-                        close()
-                    }
-                    drawPath(path, color = Color.White.copy(alpha = 0.15f))
-                    for(i in 0..10) {
-                        val x = random.nextFloat() * canvasWidth
-                        val y = random.nextFloat() * canvasHeight
-                        drawCircle(
-                            color = Color.White.copy(alpha = random.nextFloat() * 0.3f + 0.1f),
-                            radius = random.nextFloat() * 8f + 2f,
-                            center = Offset(x, y)
-                        )
-                    }
-                }
             }
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(24.dp)
-                .background(
-                    color = Color.Black.copy(alpha = 0.6f),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp)
-                )
-                .border(
-                    width = 1.dp,
-                    color = Color.White.copy(alpha = 0.2f),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp)
-                )
-                .padding(horizontal = 28.dp, vertical = 48.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Default.FormatQuote,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier.size(56.dp).offset(y = (-16).dp)
-            )
-            Text(
-                text = quote.text,
-                fontSize = 26.sp,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Medium,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                lineHeight = 36.sp,
-                modifier = Modifier.graphicsLayer {
-                    shadowElevation = 4.dp.toPx()
-                }
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-            HorizontalDivider(
-                color = Color.White.copy(alpha = 0.5f),
-                modifier = Modifier.width(60.dp).padding(bottom = 16.dp)
-            )
-            Text(
-                text = quote.author.uppercase(),
-                fontSize = 16.sp,
-                letterSpacing = 2.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White.copy(alpha = 0.9f),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = quote.category,
-                fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center
-            )
-        }
-        
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            val context = LocalContext.current
-            var isSharing by remember { mutableStateOf(false) }
-            
-            if (isSharing) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(48.dp).padding(8.dp)
-                )
-            } else {
-                IconButton(
-                    onClick = { 
-                        isSharing = true
-                        shareQuoteAsImage(context, quote) {
-                            isSharing = false
-                        }
-                    },
-                    modifier = Modifier
-                        .background(Color.White.copy(alpha = 0.2f), shape = androidx.compose.foundation.shape.CircleShape)
-                        .padding(8.dp)
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = "Compartir", tint = Color.White)
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Desliza para más",
-                color = Color.White.copy(alpha = 0.5f)
-            )
         }
     }
 }
 
-fun shareQuoteAsImage(context: Context, quote: Quote, onComplete: () -> Unit = {}) {
-    CoroutineScope(Dispatchers.IO).launch {
+@Composable
+private fun EmptyInspirationState(
+    message: String,
+    onResetFilters: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Default.FormatQuote,
+                contentDescription = null,
+                tint = AmberGold,
+                modifier = Modifier.size(56.dp)
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = message,
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 24.sp
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            Button(
+                onClick = onResetFilters,
+                colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Ver todas las frases", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+fun QuotesCatalogListView(
+    quotes: List<OratoryQuote>,
+    onSelectQuote: (Int) -> Unit,
+    onToggleFavorite: (String) -> Unit,
+    onSpeakQuote: (OratoryQuote) -> Unit
+) {
+    val context = LocalContext.current
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF0F172A))
+                )
+            ),
+        contentPadding = PaddingValues(top = 175.dp, bottom = 36.dp, start = 16.dp, end = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Surface(
+                color = AmberGold.copy(alpha = 0.14f),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AmberGold.copy(alpha = 0.35f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.MenuBook, contentDescription = null, tint = AmberGold)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Biblioteca de Citas, Libros y Cine (${quotes.size})",
+                            color = AmberGold,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "Toca cualquier tarjeta para abrirla en pantalla completa o copiarla para tu discurso.",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        itemsIndexed(quotes, key = { _, q -> q.id }) { index, quote ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSelectQuote(index) },
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.14f))
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Surface(
+                                color = AmberGold.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = quote.category,
+                                    color = AmberGold,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                            if (quote.source.isNotBlank()) {
+                                Text(
+                                    text = "• ${quote.source}",
+                                    color = Color.White.copy(alpha = 0.68f),
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Row {
+                            IconButton(
+                                onClick = { onSpeakQuote(quote) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                    contentDescription = "Escuchar",
+                                    tint = Color.White.copy(alpha = 0.85f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    copyQuoteToClipboard(context, quote)
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copiar",
+                                    tint = Color.White.copy(alpha = 0.85f),
+                                    modifier = Modifier.size(17.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = { onToggleFavorite(quote.id) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (quote.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = "Favorito",
+                                    tint = if (quote.isFavorite) CoralWarning else Color.White.copy(alpha = 0.85f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "«${quote.text}»",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontFamily = FontFamily.Serif,
+                        lineHeight = 23.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "— ${quote.author}",
+                        color = AmberGold,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+
+                    if (quote.usageTip.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.TipsAndUpdates,
+                                    contentDescription = null,
+                                    tint = AmberGold,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = quote.usageTip,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QuoteStoryPage(
+    quote: OratoryQuote,
+    onToggleFavorite: () -> Unit,
+    onSpeak: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isSharing by remember { mutableStateOf(false) }
+
+    val gradientPalettes = listOf(
+        listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)),
+        listOf(Color(0xFF4A0E4E), Color(0xFF811331), Color(0xFFB83B5E)),
+        listOf(Color(0xFF141E30), Color(0xFF243B55)),
+        listOf(Color(0xFF1D2671), Color(0xFFC33764)),
+        listOf(Color(0xFF1A2980), Color(0xFF1E6F72)),
+        listOf(Color(0xFF134E5E), Color(0xFF2E7D5B)),
+        listOf(Color(0xFF2B1055), Color(0xFF552586)),
+        listOf(Color(0xFF3A1C71), Color(0xFF8E3B46), Color(0xFF4A2545)),
+        listOf(Color(0xFF0F172A), Color(0xFF1E3A8A), Color(0xFF172554)),
+        listOf(Color(0xFF23074D), Color(0xFF753A88))
+    )
+
+    val paletteIndex = Math.abs(quote.id.hashCode()) % gradientPalettes.size
+    val currentPalette = gradientPalettes[paletteIndex]
+    val seed = Math.abs(quote.id.hashCode().toLong())
+    val random = remember(quote.id) { Random(seed) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(currentPalette))
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val canvasWidth = size.width
+            val canvasHeight = size.height
+
+            for (i in 1..4) {
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.04f),
+                    radius = i * 230f,
+                    center = Offset(canvasWidth * 0.5f, canvasHeight * 0.46f),
+                    style = Stroke(width = 3f)
+                )
+            }
+
+            for (i in 0..18) {
+                val radius = random.nextFloat() * 10f + 3f
+                val alpha = random.nextFloat() * 0.30f + 0.06f
+                drawCircle(
+                    color = Color.White.copy(alpha = alpha),
+                    radius = radius,
+                    center = Offset(random.nextFloat() * canvasWidth, random.nextFloat() * canvasHeight)
+                )
+            }
+        }
+
+        // Tarjeta central estilo Historia de Instagram
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 20.dp)
+                .padding(top = 80.dp, bottom = 74.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color.Black.copy(alpha = 0.48f))
+                .border(
+                    width = 1.2.dp,
+                    brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))),
+                    shape = RoundedCornerShape(32.dp)
+                )
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(AmberGold.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FormatQuote,
+                    contentDescription = null,
+                    tint = AmberGold,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Etiqueta de Categoría
+            Surface(
+                color = AmberGold.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = quote.category.uppercase(),
+                    color = AmberGold,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.4.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = "«${quote.text}»",
+                color = Color.White,
+                fontSize = if (quote.text.length > 165) 18.sp else 21.sp,
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                lineHeight = if (quote.text.length > 165) 27.sp else 31.sp,
+                modifier = Modifier.graphicsLayer { shadowElevation = 8.dp.toPx() }
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Box(
+                modifier = Modifier
+                    .width(48.dp)
+                    .height(2.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(AmberGold)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "— ${quote.author}",
+                color = AmberGold,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                letterSpacing = 0.6.sp
+            )
+
+            // Fuente: Libro, Película, Obra o Discurso
+            if (quote.source.isNotBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                    color = Color.White.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = when {
+                                quote.category.contains("Cine") -> Icons.Default.Movie
+                                quote.category.contains("Libros") -> Icons.Default.MenuBook
+                                quote.category.contains("Discursos") -> Icons.Default.RecordVoiceOver
+                                else -> Icons.Default.AutoAwesome
+                            },
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.85f),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = quote.source,
+                            color = Color.White.copy(alpha = 0.88f),
+                            fontSize = 12.sp,
+                            fontStyle = FontStyle.Italic,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            // Tip Retórico: Cómo usar esta frase en un discurso
+            if (quote.usageTip.isNotBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Surface(
+                    color = AmberGold.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AmberGold.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TipsAndUpdates,
+                            contentDescription = null,
+                            tint = AmberGold,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "USO EN EL ESCENARIO",
+                                color = AmberGold,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = quote.usageTip,
+                                color = Color.White.copy(alpha = 0.92f),
+                                fontSize = 12.sp,
+                                lineHeight = 17.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Barra inferior con Favorito, Escuchar TTS, Copiar y Compartir Historia
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onToggleFavorite,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (quote.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorito",
+                        tint = if (quote.isFavorite) CoralWarning else Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = onSpeak,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                        contentDescription = "Escuchar Entonación",
+                        tint = AmberGold,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { copyQuoteToClipboard(context, quote) },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = "Copiar Frase",
+                        tint = Color.White,
+                        modifier = Modifier.size(21.dp)
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        if (!isSharing) {
+                            isSharing = true
+                            coroutineScope.launch {
+                                shareQuoteAsImage(context, quote) { isSharing = false }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
+                    shape = RoundedCornerShape(26.dp),
+                    modifier = Modifier.height(48.dp)
+                ) {
+                    if (isSharing) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MidnightIndigo, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Creando...", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    } else {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Compartir", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Swipe, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(15.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Desliza para explorar más frases o usa el botón de lista arriba", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+private fun copyQuoteToClipboard(context: Context, quote: OratoryQuote) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val sourceSuffix = if (quote.source.isNotBlank()) " (${quote.source})" else ""
+    val formatted = "«${quote.text}» — ${quote.author}$sourceSuffix"
+    clipboard.setPrimaryClip(ClipData.newPlainText("Frase AISO", formatted))
+    Toast.makeText(context, "Frase copiada al portapapeles", Toast.LENGTH_SHORT).show()
+}
+
+@Composable
+fun AffirmationStoryPage(
+    affirmation: Affirmation,
+    onPractice: () -> Unit,
+    onSpeak: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isSharing by remember { mutableStateOf(false) }
+
+    val gradientPalettes = listOf(
+        listOf(Color(0xFF4A154B), Color(0xFF834D9B)),
+        listOf(Color(0xFF0F2027), Color(0xFF0083B0)),
+        listOf(Color(0xFF0F4C3A), Color(0xFF11998E)),
+        listOf(Color(0xFF7C2D12), Color(0xFFD97706)),
+        listOf(Color(0xFF4C1D95), Color(0xFF7C3AED)),
+        listOf(Color(0xFF1E3C72), Color(0xFF2A5298))
+    )
+
+    val paletteIndex = Math.abs(affirmation.category.hashCode()) % gradientPalettes.size
+    val currentPalette = gradientPalettes[paletteIndex]
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(currentPalette))
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val canvasWidth = size.width
+            val canvasHeight = size.height
+
+            for (i in 1..4) {
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.05f),
+                    radius = i * 220f,
+                    center = Offset(canvasWidth * 0.5f, canvasHeight * 0.44f),
+                    style = Stroke(width = 3f)
+                )
+            }
+        }
+
+        // Tarjeta central estilo Historia de Instagram
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 24.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color.Black.copy(alpha = 0.45f))
+                .border(
+                    width = 1.2.dp,
+                    brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))),
+                    shape = RoundedCornerShape(32.dp)
+                )
+                .padding(horizontal = 26.dp, vertical = 36.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                color = Color.White.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "✨ ${affirmation.category.uppercase()}",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = affirmation.title,
+                color = AmberGold,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = "«${affirmation.text}»",
+                color = Color.White,
+                fontSize = 21.sp,
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                lineHeight = 31.sp,
+                modifier = Modifier.graphicsLayer { shadowElevation = 8.dp.toPx() }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Box(
+                modifier = Modifier
+                    .width(48.dp)
+                    .height(2.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(Color.White.copy(alpha = 0.6f))
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "Afirmación Diaria para Oradores",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        // Barra inferior
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onSpeak,
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                        contentDescription = "Escuchar afirmación",
+                        tint = AmberGold
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        if (!isSharing) {
+                            isSharing = true
+                            coroutineScope.launch {
+                                shareAffirmationAsImage(context, affirmation) { isSharing = false }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.25f), contentColor = Color.White),
+                    shape = RoundedCornerShape(26.dp),
+                    modifier = Modifier.height(50.dp)
+                ) {
+                    if (isSharing) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Creando...", fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Compartir", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+
+                Button(
+                    onClick = onPractice,
+                    colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
+                    shape = RoundedCornerShape(26.dp),
+                    modifier = Modifier.height(50.dp)
+                ) {
+                    Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Practicar con Voz", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Swipe, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Desliza horizontalmente para ver la siguiente afirmación", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun TipStoryPage(tip: Recommendation) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isSharing by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(tip.colors))
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val canvasWidth = size.width
+            val canvasHeight = size.height
+
+            for (i in 1..4) {
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.05f),
+                    radius = i * 220f,
+                    center = Offset(canvasWidth * 0.5f, canvasHeight * 0.44f),
+                    style = Stroke(width = 3f)
+                )
+            }
+        }
+
+        // Tarjeta central estilo Historia de Instagram
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 24.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color.Black.copy(alpha = 0.48f))
+                .border(
+                    width = 1.2.dp,
+                    brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))),
+                    shape = RoundedCornerShape(32.dp)
+                )
+                .padding(horizontal = 26.dp, vertical = 36.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(AmberGold.copy(alpha = 0.25f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lightbulb,
+                    contentDescription = null,
+                    tint = AmberGold,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                color = AmberGold.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "💡 TIP DE ORATORIA • ${tip.category.uppercase()}",
+                    color = AmberGold,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = tip.title,
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = tip.text,
+                color = Color.White.copy(alpha = 0.95f),
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 28.sp
+            )
+
+            Spacer(modifier = Modifier.height(26.dp))
+
+            Box(
+                modifier = Modifier
+                    .width(48.dp)
+                    .height(2.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(AmberGold)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "Técnica Práctica de Escenario",
+                color = AmberGold,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        // Barra inferior
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Button(
+                onClick = {
+                    if (!isSharing) {
+                        isSharing = true
+                        coroutineScope.launch {
+                            shareTipAsImage(context, tip) { isSharing = false }
+                        }
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
+                shape = RoundedCornerShape(26.dp),
+                modifier = Modifier.height(50.dp)
+            ) {
+                if (isSharing) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MidnightIndigo, strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Creando...", fontWeight = FontWeight.Bold)
+                } else {
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Compartir Tip en Historias", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Swipe, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Desliza horizontalmente para ver el siguiente tip", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+suspend fun shareTipAsImage(context: Context, tip: Recommendation, onComplete: () -> Unit) {
+    withContext(Dispatchers.IO) {
         try {
             val width = 1080
-            val height = 1080
+            val height = 1920
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            val canvas = AndroidCanvas(bitmap)
+            val canvas = Canvas(bitmap)
 
-            val colorStart = quote.colors[0].toArgb()
-            val colorEnd = quote.colors.last().toArgb()
-
-            val gradient = LinearGradient(
-                0f, 0f, 0f, height.toFloat(),
-                colorStart, colorEnd,
+            val shader = LinearGradient(
+                0f, 0f, width.toFloat(), height.toFloat(),
+                intArrayOf(
+                    android.graphics.Color.parseColor("#0F172A"),
+                    android.graphics.Color.parseColor("#1E293B"),
+                    android.graphics.Color.parseColor("#334155")
+                ),
+                null,
                 Shader.TileMode.CLAMP
             )
-            val bgPaint = Paint().apply { shader = gradient }
+            val bgPaint = Paint().apply { this.shader = shader }
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
-            
-            val random = java.util.Random(quote.text.hashCode().toLong())
-            
-            // Draw creative background based on category
-            val w = width.toFloat()
-            val h = height.toFloat()
-            
-            when (quote.category) {
-                "Oratoria" -> {
-                    val pathPaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 38; isAntiAlias = true }
-                    val path = android.graphics.Path().apply {
-                        moveTo(0f, h * 0.4f)
-                        cubicTo(w * 0.25f, h * 0.3f, w * 0.75f, h * 0.5f, w, h * 0.4f)
-                        lineTo(w, 0f)
-                        lineTo(0f, 0f)
-                        close()
-                    }
-                    canvas.drawPath(path, pathPaint)
-                }
-                "Motivacional" -> {
-                    val rayPaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 15; isAntiAlias = true }
-                    canvas.save()
-                    canvas.translate(w / 2f, h / 2f)
-                    for (i in 0..11) {
-                        canvas.rotate(30f)
-                        canvas.drawRoundRect(-30f, -h * 0.7f, 30f, h * 0.7f, 30f, 30f, rayPaint)
-                    }
-                    canvas.restore()
-                }
-                "Ley de Atracción" -> {
-                    val circlePaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 15; style = Paint.Style.STROKE; strokeWidth = 10f; isAntiAlias = true }
-                    for (i in 1..5) {
-                        canvas.drawCircle(w / 2f, h / 2f, i * 250f, circlePaint)
-                    }
-                    val sparkPaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 150; isAntiAlias = true }
-                    for (i in 0..25) {
-                        canvas.drawCircle(random.nextFloat() * w, random.nextFloat() * h, random.nextFloat() * 15f + 5f, sparkPaint)
-                    }
-                }
-                "Fe" -> {
-                    val rayPaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 38; isAntiAlias = true }
-                    for (i in 0..10) {
-                        val angle = (i * 12 - 60) * (Math.PI / 180f)
-                        val startX = w / 2f
-                        val startY = -200f
-                        val endX = startX + Math.sin(angle).toFloat() * h * 1.5f
-                        val endY = startY + Math.cos(angle).toFloat() * h * 1.5f
-                        rayPaint.strokeWidth = random.nextFloat() * 80f + 30f
-                        canvas.drawLine(startX, startY, endX, endY, rayPaint)
-                    }
-                }
-                "Negocios" -> {
-                    val gridPaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 25; strokeWidth = 4f; isAntiAlias = true }
-                    var x = 0f
-                    while (x < w) { canvas.drawLine(x, 0f, x, h, gridPaint); x += 200f }
-                    var y = 0f
-                    while (y < h) { canvas.drawLine(0f, y, w, y, gridPaint); y += 200f }
-                }
-                "Liderazgo" -> {
-                    val stripePaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 20; isAntiAlias = true }
-                    for (i in -2..6) {
-                        val startY = i * 450f
-                        val path = android.graphics.Path().apply {
-                            moveTo(0f, startY)
-                            lineTo(w, startY - w)
-                            lineTo(w, startY - w + 200f)
-                            lineTo(0f, startY + 200f)
-                            close()
-                        }
-                        canvas.drawPath(path, stripePaint)
-                    }
-                }
-                "Biblia" -> {
-                    val circlePaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 15; style = Paint.Style.STROKE; strokeWidth = 5f; isAntiAlias = true }
-                    for (i in 0..3) {
-                        canvas.drawCircle(w / 2f, h / 2f, (i * 200f) + 150f, circlePaint)
-                    }
-                    val bookPaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 38; isAntiAlias = true }
-                    val bookPath = android.graphics.Path().apply {
-                        moveTo(w * 0.3f, h * 0.8f)
-                        quadTo(w * 0.5f, h * 0.85f, w * 0.7f, h * 0.8f)
-                        lineTo(w * 0.7f, h)
-                        lineTo(w * 0.3f, h)
-                        close()
-                    }
-                    canvas.drawPath(bookPath, bookPaint)
-                    val starPaint = Paint().apply { color = android.graphics.Color.WHITE; alpha = 100; isAntiAlias = true }
-                    for(i in 0..10) {
-                        canvas.drawCircle(random.nextFloat() * w, random.nextFloat() * h, random.nextFloat() * 10f + 5f, starPaint)
-                    }
-                }
-            }
-            
-            // Unicolor square for the text to live in
-            val cardRect = android.graphics.RectF(80f, 160f, width - 80f, height - 160f)
-            val cardPaint = Paint().apply {
-                color = android.graphics.Color.BLACK
-                alpha = 150 // Translúcido pero constante (unicolor effect)
-                isAntiAlias = true
-            }
-            canvas.drawRoundRect(cardRect, 80f, 80f, cardPaint)
-            
-            val borderPaint = Paint().apply {
-                color = android.graphics.Color.WHITE
-                alpha = 50
-                style = Paint.Style.STROKE
-                strokeWidth = 4f
-                isAntiAlias = true
-            }
-            canvas.drawRoundRect(cardRect, 80f, 80f, borderPaint)
 
-            val quoteMarkPaint = Paint().apply {
-                color = android.graphics.Color.WHITE
-                alpha = 200
-                textSize = 180f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                textAlign = Paint.Align.CENTER
-                isAntiAlias = true
+            val cardRect = RectF(80f, 400f, (width - 80).toFloat(), (height - 400).toFloat())
+            val cardPaint = Paint().apply {
+                color = android.graphics.Color.parseColor("#000000")
+                alpha = 130
             }
-            canvas.drawText("“", width / 2f, 320f, quoteMarkPaint)
+            canvas.drawRoundRect(cardRect, 48f, 48f, cardPaint)
+
+            val tagPaint = TextPaint().apply {
+                color = android.graphics.Color.parseColor("#F59E0B")
+                textSize = 34f
+                isAntiAlias = true
+                isFakeBoldText = true
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("💡 TIP • ${tip.category.uppercase()}", (width / 2).toFloat(), 530f, tagPaint)
+
+            val titlePaint = TextPaint().apply {
+                color = android.graphics.Color.WHITE
+                textSize = 50f
+                isAntiAlias = true
+                isFakeBoldText = true
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText(tip.title, (width / 2).toFloat(), 640f, titlePaint)
 
             val textPaint = TextPaint().apply {
-                color = android.graphics.Color.WHITE
-                textSize = 64f
-                typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
-                textAlign = Paint.Align.CENTER
+                color = android.graphics.Color.parseColor("#E2E8F0")
+                textSize = 44f
                 isAntiAlias = true
+                textAlign = Paint.Align.CENTER
             }
 
-            val staticLayout = StaticLayout.Builder.obtain(quote.text, 0, quote.text.length, textPaint, width - 240)
-                .setAlignment(Layout.Alignment.ALIGN_CENTER)
-                .setLineSpacing(0f, 1.3f)
+            val textWidth = width - 260
+            val staticLayout = StaticLayout.Builder.obtain(tip.text, 0, tip.text.length, textPaint, textWidth)
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setLineSpacing(16f, 1.25f)
                 .build()
 
             canvas.save()
-            canvas.translate(width / 2f, height / 2f - staticLayout.height / 2f)
+            canvas.translate((width / 2).toFloat(), 760f)
             staticLayout.draw(canvas)
             canvas.restore()
 
-            val authorPaint = Paint().apply {
-                color = android.graphics.Color.WHITE
-                alpha = 255
-                textSize = 42f
-                letterSpacing = 0.05f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                textAlign = Paint.Align.CENTER
+            val watermarkPaint = TextPaint().apply {
+                color = android.graphics.Color.parseColor("#CBD5E1")
+                textSize = 28f
                 isAntiAlias = true
-            }
-            canvas.drawText(quote.author.uppercase(), width / 2f, height / 2f + staticLayout.height / 2f + 120f, authorPaint)
-            
-            val catPaint = Paint().apply {
-                color = android.graphics.Color.WHITE
-                alpha = 180
-                textSize = 32f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
                 textAlign = Paint.Align.CENTER
-                isAntiAlias = true
             }
-            canvas.drawText(quote.category, width / 2f, height / 2f + staticLayout.height / 2f + 180f, catPaint)
-            
-            
-            val brandingPaint = Paint().apply {
-                color = android.graphics.Color.WHITE
-                alpha = 150
-                textSize = 36f
-                textAlign = Paint.Align.CENTER
-                isAntiAlias = true
-            }
-            canvas.drawText("Oratoria & Liderazgo", width / 2f, height - 60f, brandingPaint)
+            canvas.drawText("AISO • Los Secretos del Orador Exitoso", (width / 2).toFloat(), (height - 180).toFloat(), watermarkPaint)
 
-            val imagesDir = File(context.cacheDir, "images")
-            imagesDir.mkdirs()
-            val file = File(imagesDir, "quote.png")
-            val outputStream = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-            outputStream.flush()
-            outputStream.close()
+            val imagesFolder = File(context.cacheDir, "shared_quotes")
+            imagesFolder.mkdirs()
+            val file = File(imagesFolder, "aiso_tip_${Math.abs(tip.title.hashCode())}.png")
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
 
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_TEXT, "✨ \"${quote.text}\" - ${quote.author}")
+                putExtra(Intent.EXTRA_TEXT, "💡 ${tip.title}: ${tip.text}\n✨ Consejos prácticos en AISO")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(intent, "Compartir Frase"))
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
+
             withContext(Dispatchers.Main) {
                 onComplete()
+                context.startActivity(Intent.createChooser(intent, "Compartir Tip en Historias"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                onComplete()
+                Toast.makeText(context, "Error al generar imagen: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+
+suspend fun shareQuoteAsImage(context: Context, quote: OratoryQuote, onComplete: () -> Unit) {
+    withContext(Dispatchers.IO) {
+        try {
+            val width = 1080
+            val height = 1920
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+
+            val shader = LinearGradient(
+                0f, 0f, width.toFloat(), height.toFloat(),
+                intArrayOf(
+                    android.graphics.Color.parseColor("#0F172A"),
+                    android.graphics.Color.parseColor("#1E1B4B"),
+                    android.graphics.Color.parseColor("#312E81")
+                ),
+                null,
+                Shader.TileMode.CLAMP
+            )
+            val bgPaint = Paint().apply { this.shader = shader }
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+
+            val decoPaint = Paint().apply {
+                color = android.graphics.Color.parseColor("#FFFFFF")
+                alpha = 15
+                style = Paint.Style.STROKE
+                strokeWidth = 4f
+            }
+            canvas.drawCircle(width / 2f, height / 2f, 400f, decoPaint)
+            canvas.drawCircle(width / 2f, height / 2f, 650f, decoPaint)
+
+            val cardRect = RectF(80f, 360f, (width - 80).toFloat(), (height - 360).toFloat())
+            val cardPaint = Paint().apply {
+                color = android.graphics.Color.parseColor("#000000")
+                alpha = 120
+            }
+            canvas.drawRoundRect(cardRect, 48f, 48f, cardPaint)
+
+            val borderPaint = Paint().apply {
+                color = android.graphics.Color.parseColor("#D97706")
+                alpha = 180
+                style = Paint.Style.STROKE
+                strokeWidth = 3f
+            }
+            canvas.drawRoundRect(cardRect, 48f, 48f, borderPaint)
+
+            val tagPaint = TextPaint().apply {
+                color = android.graphics.Color.parseColor("#F59E0B")
+                textSize = 34f
+                isAntiAlias = true
+                isFakeBoldText = true
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("ORATORIA & PERSUASIÓN • ${quote.category.uppercase()}", (width / 2).toFloat(), 500f, tagPaint)
+
+            val quoteMarkPaint = TextPaint().apply {
+                color = android.graphics.Color.parseColor("#D97706")
+                textSize = 140f
+                isAntiAlias = true
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("“", (width / 2).toFloat(), 650f, quoteMarkPaint)
+
+            val textPaint = TextPaint().apply {
+                color = android.graphics.Color.WHITE
+                textSize = 48f
+                isAntiAlias = true
+                textAlign = Paint.Align.CENTER
+            }
+
+            val textWidth = width - 260
+            val quoteText = "«${quote.text}»"
+            val staticLayout = StaticLayout.Builder.obtain(
+                quoteText, 0, quoteText.length, textPaint, textWidth
+            )
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setLineSpacing(16f, 1.25f)
+                .build()
+
+            canvas.save()
+            val textY = 730f
+            canvas.translate((width / 2).toFloat(), textY)
+            staticLayout.draw(canvas)
+            canvas.restore()
+
+            val authorPaint = TextPaint().apply {
+                color = android.graphics.Color.parseColor("#F59E0B")
+                textSize = 40f
+                isAntiAlias = true
+                isFakeBoldText = true
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("— ${quote.author}", (width / 2).toFloat(), (height - 520).toFloat(), authorPaint)
+
+            if (quote.source.isNotBlank()) {
+                val sourcePaint = TextPaint().apply {
+                    color = android.graphics.Color.parseColor("#CBD5E1")
+                    textSize = 30f
+                    isAntiAlias = true
+                    textAlign = Paint.Align.CENTER
+                }
+                canvas.drawText(quote.source, (width / 2).toFloat(), (height - 460).toFloat(), sourcePaint)
+            }
+
+            val watermarkPaint = TextPaint().apply {
+                color = android.graphics.Color.parseColor("#CBD5E1")
+                textSize = 28f
+                isAntiAlias = true
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("AISO • Los Secretos del Orador Exitoso", (width / 2).toFloat(), (height - 180).toFloat(), watermarkPaint)
+
+            val imagesFolder = File(context.cacheDir, "shared_quotes")
+            imagesFolder.mkdirs()
+            val file = File(imagesFolder, "aiso_quote_${quote.id}.png")
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_TEXT, "«${quote.text}» — ${quote.author}\n✨ Entrena tu oratoria con AISO")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            withContext(Dispatchers.Main) {
+                onComplete()
+                context.startActivity(Intent.createChooser(intent, "Compartir en Historia de Instagram"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                onComplete()
+                Toast.makeText(context, "Error al generar imagen: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+
+suspend fun shareAffirmationAsImage(context: Context, affirmation: Affirmation, onComplete: () -> Unit) {
+    withContext(Dispatchers.IO) {
+        try {
+            val width = 1080
+            val height = 1920
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+
+            val shader = LinearGradient(
+                0f, 0f, width.toFloat(), height.toFloat(),
+                intArrayOf(
+                    android.graphics.Color.parseColor("#4C1D95"),
+                    android.graphics.Color.parseColor("#7C3AED"),
+                    android.graphics.Color.parseColor("#C026D3")
+                ),
+                null,
+                Shader.TileMode.CLAMP
+            )
+            val bgPaint = Paint().apply { this.shader = shader }
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+
+            val cardRect = RectF(80f, 400f, (width - 80).toFloat(), (height - 400).toFloat())
+            val cardPaint = Paint().apply {
+                color = android.graphics.Color.parseColor("#000000")
+                alpha = 130
+            }
+            canvas.drawRoundRect(cardRect, 48f, 48f, cardPaint)
+
+            val tagPaint = TextPaint().apply {
+                color = android.graphics.Color.parseColor("#FDE047")
+                textSize = 36f
+                isAntiAlias = true
+                isFakeBoldText = true
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("✨ AFIRMACIÓN • ${affirmation.category.uppercase()}", (width / 2).toFloat(), 530f, tagPaint)
+
+            val titlePaint = TextPaint().apply {
+                color = android.graphics.Color.parseColor("#FBBF24")
+                textSize = 48f
+                isAntiAlias = true
+                isFakeBoldText = true
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText(affirmation.title, (width / 2).toFloat(), 640f, titlePaint)
+
+            val textPaint = TextPaint().apply {
+                color = android.graphics.Color.WHITE
+                textSize = 48f
+                isAntiAlias = true
+                textAlign = Paint.Align.CENTER
+            }
+
+            val textWidth = width - 260
+            val text = "«${affirmation.text}»"
+            val staticLayout = StaticLayout.Builder.obtain(text, 0, text.length, textPaint, textWidth)
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setLineSpacing(16f, 1.25f)
+                .build()
+
+            canvas.save()
+            canvas.translate((width / 2).toFloat(), 740f)
+            staticLayout.draw(canvas)
+            canvas.restore()
+
+            val watermarkPaint = TextPaint().apply {
+                color = android.graphics.Color.parseColor("#E2E8F0")
+                textSize = 28f
+                isAntiAlias = true
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("AISO • Mentalidad de Orador Exitoso", (width / 2).toFloat(), (height - 180).toFloat(), watermarkPaint)
+
+            val imagesFolder = File(context.cacheDir, "shared_quotes")
+            imagesFolder.mkdirs()
+            val file = File(imagesFolder, "aiso_affirmation_${affirmation.id}.png")
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_TEXT, "«${affirmation.text}»\n✨ Afirmación de poder en AISO")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            withContext(Dispatchers.Main) {
+                onComplete()
+                context.startActivity(Intent.createChooser(intent, "Compartir Afirmación en Historias"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                onComplete()
+                Toast.makeText(context, "Error al generar imagen: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
             }
         }
     }

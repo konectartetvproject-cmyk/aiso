@@ -64,6 +64,10 @@ fun SalesPracticeScreen(
 
     val state by viewModel.state.collectAsState()
 
+    androidx.activity.compose.BackHandler {
+        onBack()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -107,6 +111,8 @@ fun SalesConfigView(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
+            .navigationBarsPadding()
+            .imePadding()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -205,7 +211,6 @@ fun SalesPracticeView(
     DisposableEffect(Unit) {
         val tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                // Ignore result for brevity, assume success
             }
         }
         tts.language = Locale("es", "ES")
@@ -239,7 +244,7 @@ fun SalesPracticeView(
             override fun onEndOfSpeech() {}
             override fun onError(error: Int) {
                 if (state.isRecording) {
-                    viewModel.toggleRecording() // stop recording on error
+                    viewModel.toggleRecording()
                 }
             }
             override fun onResults(results: Bundle?) {
@@ -274,7 +279,6 @@ fun SalesPracticeView(
             .fillMaxSize()
             .padding(paddingValues)
     ) {
-        // Camera Preview + Status (Top half)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -295,15 +299,17 @@ fun SalesPracticeView(
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .build()
                         
+                        var lastSampleTime = 0L
                         imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(ctx)) { imageProxy ->
-                            // Update frame constantly to send when user speaks
-                            val bitmap = imageProxy.toBitmapCustom()
-                            if (bitmap != null) {
-                                currentFrame = bitmap
+                            val currentTime = System.currentTimeMillis()
+                            if (currentTime - lastSampleTime >= 1500) {
+                                lastSampleTime = currentTime
+                                try {
+                                    currentFrame = imageProxy.toBitmap()
+                                } catch (_: Exception) {}
                             }
                             imageProxy.close()
                         }
-
                         val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
                         try {
                             cameraProvider.unbindAll()
@@ -319,7 +325,6 @@ fun SalesPracticeView(
                 modifier = Modifier.fillMaxSize()
             )
             
-            // Status Overlay
             if (state.isWaitingForAI) {
                 Box(
                     modifier = Modifier
@@ -334,8 +339,8 @@ fun SalesPracticeView(
                         Text("Cliente pensando...", color = Color.White, fontSize = 12.sp)
                     }
                 }
-            } else if (state.isRecording) {
-                 Box(
+            } else if (state.isRecording) { 
+                Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(16.dp)
@@ -347,7 +352,6 @@ fun SalesPracticeView(
             }
         }
 
-        // Chat History (Bottom half)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -396,11 +400,39 @@ fun SalesPracticeView(
                 }
             }
 
-            // Controls
+            var manualInput by remember { mutableStateOf("") }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = manualInput,
+                    onValueChange = { manualInput = it },
+                    placeholder = { Text("O escribe tu argumento de venta...") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                FilledTonalButton(
+                    onClick = {
+                        if (manualInput.isNotBlank()) {
+                            viewModel.onUserSpeechResult(manualInput, currentFrame)
+                            manualInput = ""
+                        }
+                    },
+                    enabled = manualInput.isNotBlank() && !state.isWaitingForAI
+                ) {
+                    Text("Enviar")
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {

@@ -3,15 +3,8 @@ package com.example.viewmodel
 import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
-import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.BuildConfig
-import com.example.api.Content
-import com.example.api.GenerateContentRequest
-import com.example.api.InlineData
-import com.example.api.Part
-import com.example.api.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +12,6 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 class TongueTwisterViewModel : ViewModel() {
-
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
@@ -69,9 +61,9 @@ class TongueTwisterViewModel : ViewModel() {
             }
             mediaRecorder = null
             _isRecording.value = false
-
-            if (audioFile?.exists() == true) {
-                analyzeAudio(audioFile!!, twisterText, instruction)
+            val file = audioFile
+            if (file != null && file.exists()) {
+                analyzeAudio(file, twisterText, instruction)
             } else {
                 _error.value = "No se pudo guardar el archivo de audio."
             }
@@ -85,50 +77,13 @@ class TongueTwisterViewModel : ViewModel() {
         _isAnalyzing.value = true
         _feedback.value = null
         _error.value = null
-
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
-                if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _error.value = "Por favor, configura tu API Key de Gemini en la pestaña de Secrets."
-                    _isAnalyzing.value = false
-                    return@launch
-                }
-
-                val bytes = file.readBytes()
-                val base64Audio = Base64.encodeToString(bytes, Base64.NO_WRAP)
-
-                val prompt = """
-                    Eres un experto profesor de oratoria. El usuario acaba de grabar un audio recitando este trabalenguas:
-                    "$twisterText"
-                    
-                    La instrucción adicional era: "$instruction"
-                    
-                    Por favor, escucha el audio y analiza su dicción, claridad y entonación. ¿Cumplió con la instrucción?
-                    Dame una retroalimentación breve (1 párrafo), directa y constructiva.
-                """.trimIndent()
-
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(
-                            parts = listOf(
-                                Part(text = prompt),
-                                Part(inlineData = InlineData(mimeType = "audio/mp4", data = base64Audio))
-                            )
-                        )
-                    )
-                )
-
-                val response = RetrofitClient.service.generateContent(apiKey, request)
-                val text = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                
-                if (text != null) {
-                    _feedback.value = text
-                } else {
-                    _error.value = "No se recibió respuesta del análisis."
-                }
+                kotlinx.coroutines.delay(400)
+                val feedback = com.example.util.AisoOfflineEngine.evaluateTongueTwister(twisterText, instruction, file.length())
+                _feedback.value = feedback
             } catch (e: Exception) {
-                _error.value = "Error de conexión o análisis: ${e.message}"
+                _error.value = "Error al analizar trabalenguas: ${e.message}"
             } finally {
                 _isAnalyzing.value = false
             }

@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class RunnerItemType(val icon: String, val isObstacle: Boolean) {
-    MULETILLA("🧟", true),
-    PANICO("👻", true),
+    MULETILLA("🗯️", true),
+    PANICO("😨", true),
     PALABRA_CLAVE("💡", false)
 }
 
@@ -35,7 +35,6 @@ data class RunnerGameState(
 class OratoryRunnerViewModel : ViewModel() {
     private val _state = MutableStateFlow(RunnerGameState())
     val state: StateFlow<RunnerGameState> = _state.asStateFlow()
-
     private var gameLoopJob: Job? = null
     private var nextId = 0
     private var ticks = 0
@@ -46,7 +45,7 @@ class OratoryRunnerViewModel : ViewModel() {
         gameLoopJob?.cancel()
         gameLoopJob = viewModelScope.launch {
             while (true) {
-                delay(50) // 20 FPS
+                delay(50)
                 if (_state.value.isPlaying && !_state.value.isGameOver) {
                     updateGame()
                 }
@@ -68,19 +67,14 @@ class OratoryRunnerViewModel : ViewModel() {
 
     private fun updateGame() {
         ticks++
-        
         _state.update { state ->
             var newScore = state.score
             var isGameOver = false
             var newItems = state.items.toMutableList()
             var speed = state.speed
-
-            // Aumentar velocidad con el tiempo
             if (ticks % 200 == 0) {
                 speed += 0.002f
             }
-            
-            // Frecuencia de aparición (se hace más rápida con la velocidad)
             val spawnRate = (30 - (speed * 100).toInt()).coerceAtLeast(8)
             if (ticks % spawnRate == 0) {
                 val lane = (0..2).random()
@@ -92,14 +86,9 @@ class OratoryRunnerViewModel : ViewModel() {
                 }
                 newItems.add(RunnerItem(nextId++, type, lane, -0.1f))
             }
-            
             val itemsToRemove = mutableListOf<RunnerItem>()
-            
-            // Mover objetos y comprobar colisiones
             newItems = newItems.map { item ->
                 val updatedItem = item.copy(y = item.y + speed)
-                
-                // El jugador está en y = 0.85f
                 val isColliding = updatedItem.y > 0.8f && updatedItem.y < 0.95f && updatedItem.lane == state.playerLane
                 if (isColliding) {
                     if (updatedItem.type.isObstacle) {
@@ -109,16 +98,14 @@ class OratoryRunnerViewModel : ViewModel() {
                         itemsToRemove.add(updatedItem)
                     }
                 }
-                
                 if (updatedItem.y > 1.2f) {
                     itemsToRemove.add(updatedItem)
                 }
-                
                 updatedItem
             }.toMutableList()
-            
+
             newItems.removeAll(itemsToRemove)
-            
+
             state.copy(
                 items = newItems,
                 score = newScore,
@@ -127,7 +114,7 @@ class OratoryRunnerViewModel : ViewModel() {
             )
         }
     }
-    
+
     override fun onCleared() {
         super.onCleared()
         gameLoopJob?.cancel()

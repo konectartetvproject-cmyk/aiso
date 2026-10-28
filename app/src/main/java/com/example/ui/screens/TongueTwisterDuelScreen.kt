@@ -33,7 +33,6 @@ fun TongueTwisterDuelScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var currentTwister by remember { mutableStateOf(tongueTwistersList.random()) }
-
     val isRecordingP1 by viewModel.isRecordingP1.collectAsState()
     val isRecordingP2 by viewModel.isRecordingP2.collectAsState()
     val hasAudioP1 by viewModel.hasAudioP1.collectAsState()
@@ -43,7 +42,6 @@ fun TongueTwisterDuelScreen(
     val error by viewModel.error.collectAsState()
 
     var activePlayerForPermission by remember { mutableStateOf(1) }
-
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
@@ -114,9 +112,7 @@ fun TongueTwisterDuelScreen(
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-
                 Spacer(modifier = Modifier.height(24.dp))
-
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -142,15 +138,11 @@ fun TongueTwisterDuelScreen(
                         )
                     }
                 }
-
                 Spacer(modifier = Modifier.height(32.dp))
-
-                // Jugadores
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    // Jugador 1
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Jugador 1", fontWeight = FontWeight.Bold, color = Color(0xFF1E88E5))
                         Spacer(modifier = Modifier.height(8.dp))
@@ -177,8 +169,6 @@ fun TongueTwisterDuelScreen(
                             Text(if (isRecordingP1) "Grabando..." else "Grabar", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                         }
                     }
-
-                    // Jugador 2
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Jugador 2", fontWeight = FontWeight.Bold, color = Color(0xFFE53935))
                         Spacer(modifier = Modifier.height(8.dp))
@@ -206,10 +196,7 @@ fun TongueTwisterDuelScreen(
                         }
                     }
                 }
-
                 Spacer(modifier = Modifier.height(24.dp))
-
-                // Error Message
                 if (error != null) {
                     Text(
                         text = error!!,
@@ -219,19 +206,16 @@ fun TongueTwisterDuelScreen(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                 }
-
-                // Analyzing state or Evaluate Button
                 if (isAnalyzing) {
                     CircularProgressIndicator(modifier = Modifier.padding(16.dp))
                     Text("Los jueces de Gemini están evaluando...", color = MaterialTheme.colorScheme.primary)
                 } else if (feedback != null) {
-                    // Feedback display
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1))
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Veredicto del Duelo 🏆", fontWeight = FontWeight.Bold, color = Color(0xFFF57F17))
+                            Text("Veredicto del Duelo ⚖️", fontWeight = FontWeight.Bold, color = Color(0xFFF57F17))
                             Spacer(Modifier.height(8.dp))
                             Text(feedback!!, color = Color(0xFF3E2723))
                         }
@@ -245,9 +229,7 @@ fun TongueTwisterDuelScreen(
                         Text("Evaluar Duelo", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-
                 Spacer(modifier = Modifier.height(32.dp))
-
                 Button(
                     onClick = {
                         var nextTwister = tongueTwistersList.random()

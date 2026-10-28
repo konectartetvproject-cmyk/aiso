@@ -2,17 +2,15 @@ package com.example.viewmodel
 
 import android.graphics.Bitmap
 import android.speech.tts.TextToSpeech
-import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.BuildConfig
-import com.example.gemini.*
+import com.example.util.AisoOfflineEngine
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.ByteArrayOutputStream
 
 data class CSChatMessage(
     val role: String,
@@ -32,7 +30,6 @@ data class CustomerServiceState(
 class CustomerServicePracticeViewModel : ViewModel() {
     private val _state = MutableStateFlow(CustomerServiceState())
     val state: StateFlow<CustomerServiceState> = _state.asStateFlow()
-
     private var tts: TextToSpeech? = null
 
     fun updateContextInfo(info: String) {
@@ -48,7 +45,6 @@ class CustomerServicePracticeViewModel : ViewModel() {
                 feedback = null
             )
         }
-        // AI speaks first
         triggerAIResponse()
     }
 
@@ -63,47 +59,19 @@ class CustomerServicePracticeViewModel : ViewModel() {
             val newHistory = it.chatHistory + CSChatMessage(role = "user", text = text)
             it.copy(chatHistory = newHistory, isRecording = false, isWaitingForAI = true)
         }
-
         triggerAIResponse(bitmap)
     }
 
     private fun triggerAIResponse(bitmap: Bitmap? = null) {
-        val currentState = _state.value
         viewModelScope.launch {
             try {
-                val systemInstruction = "Eres un cliente interactuando con un agente de atención al cliente. El producto/servicio es: ${currentState.contextInfo}. Actúa como un cliente con dudas, problemas o interés en comprar. Mantén tus respuestas conversacionales, breves (1-3 oraciones) y naturales. Si el agente resuelve todo, puedes despedirte."
-                
-                val contents = currentState.chatHistory.map {
-                    Content(
-                        role = it.role,
-                        parts = listOf(Part(text = it.text))
-                    )
-                }.toMutableList()
-
-                // Optional: If we want AI to comment on body language/face, we can pass image as last user part
-                if (bitmap != null && contents.isNotEmpty()) {
-                    val lastContent = contents.last()
-                    val base64Image = bitmapToBase64(bitmap)
-                    val updatedParts = lastContent.parts.toMutableList()
-                    updatedParts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = base64Image)))
-                    contents[contents.size - 1] = lastContent.copy(parts = updatedParts)
+                delay(400)
+                val historyPairs = _state.value.chatHistory.map { it.role to it.text }
+                val aiText = if (historyPairs.isEmpty()) {
+                    "Hola, tengo un inconveniente urgente con el servicio que contraté y necesito que me den una solución clara hoy mismo."
+                } else {
+                    AisoOfflineEngine.generateCustomerRoleplayTurn(historyPairs, isSales = false)
                 }
-
-                val request = GenerateContentRequest(
-                    systemInstruction = Content(role = "user", parts = listOf(Part(text = systemInstruction))),
-                    contents = if (contents.isEmpty()) {
-                        // AI starts the conversation
-                        listOf(Content(role = "user", parts = listOf(Part(text = "Hola, estoy interesado o tengo un problema con su producto/servicio."))))
-                    } else contents
-                )
-
-                val response = GeminiRetrofitClient.service.generateContent(
-                    apiKey = BuildConfig.GEMINI_API_KEY,
-                    request = request
-                )
-                
-                val aiText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "No entendí."
-                
                 _state.update {
                     it.copy(
                         chatHistory = it.chatHistory + CSChatMessage(role = "model", text = aiText),
@@ -121,22 +89,9 @@ class CustomerServicePracticeViewModel : ViewModel() {
         _state.update { it.copy(isFinished = true, isWaitingForAI = true) }
         viewModelScope.launch {
             try {
-                val transcript = _state.value.chatHistory.joinToString("\n") { "${if (it.role == "user") "Agente" else "Cliente"}: ${it.text}" }
-                val prompt = "Eres un coach de atención al cliente. El agente acaba de terminar una práctica. Esta es la transcripción de la conversación:\n$transcript\n\nDame una evaluación y consejos constructivos para el agente."
-                
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(role = "user", parts = listOf(Part(text = prompt)))
-                    )
-                )
-
-                val response = GeminiRetrofitClient.service.generateContent(
-                    apiKey = BuildConfig.GEMINI_API_KEY,
-                    request = request
-                )
-                
-                val feedback = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "Buen trabajo."
-                
+                delay(450)
+                val historyPairs = _state.value.chatHistory.map { it.role to it.text }
+                val feedback = AisoOfflineEngine.evaluateCustomerRoleplay(historyPairs, isSales = false)
                 _state.update { it.copy(feedback = feedback, isWaitingForAI = false) }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -156,12 +111,5 @@ class CustomerServicePracticeViewModel : ViewModel() {
     override fun onCleared() {
         tts?.shutdown()
         super.onCleared()
-    }
-
-    private fun bitmapToBase64(bitmap: Bitmap): String {
-        val outputStream = ByteArrayOutputStream()
-        val scaled = Bitmap.createScaledBitmap(bitmap, 480, 640, true)
-        scaled.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
-        return Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
     }
 }

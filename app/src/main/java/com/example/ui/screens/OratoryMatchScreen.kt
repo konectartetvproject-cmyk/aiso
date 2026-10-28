@@ -100,7 +100,6 @@ fun OratoryMatchScreen(
                     .padding(paddingValues)
                     .background(Color(0xFFF5F5F5))
             ) {
-                // Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -121,7 +120,6 @@ fun OratoryMatchScreen(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Grid
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

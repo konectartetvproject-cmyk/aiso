@@ -33,7 +33,7 @@ val rhetoricalQuestionsLevel1 = listOf(
         explanation = "Identifica un término real (ojos) con uno imaginario (luceros) sin usar nexos comparativos."
     ),
     RhetoricalQuestion(
-        sentence = "Lloró un río de lágrimas al despedirse.",
+        sentence = "Lloré un río de lágrimas al despedirse.",
         correctFigure = "Hipérbole",
         options = listOf("Metáfora", "Anáfora", "Hipérbole", "Símil"),
         explanation = "Es una exageración evidente de la realidad (llorar un río) para dar mayor impacto al mensaje."
@@ -111,7 +111,7 @@ fun RhetoricalFiguresGameScreen(onBack: () -> Unit) {
     
     var showIntro by remember { mutableStateOf(true) }
     var showLevelUp by remember { mutableStateOf(false) }
-    var gameState by remember { mutableStateOf("playing") } // playing, won, lost
+    var gameState by remember { mutableStateOf("playing") }
     
     var showExplanation by remember { mutableStateOf(false) }
     var lastAnswerCorrect by remember { mutableStateOf(false) }
@@ -253,7 +253,6 @@ fun RhetoricalFiguresGameScreen(onBack: () -> Unit) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header stats
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
