@@ -210,10 +210,10 @@ fun MainScreen(
                         onClick = { onNavigateToRoute("aiso_live") }
                     ),
                     FeatureItem(
-                        title = "AISO Tutor (Chat)",
-                        subtitle = "Mentoría directa con respuestas concisas de Gemini",
+                        title = "Tutor AISO IA",
+                        subtitle = "Crea discursos, corrige textos y resuelve dudas al instante",
                         icon = Icons.Default.AutoAwesome,
-                        badge = "IA TUTOR",
+                        badge = "IA PRO",
                         cardGradient = listOf(Color(0xFF78350F), Color(0xFFB45309)),
                         iconBgColor = Color(0xFFFBBF24),
                         onClick = { onNavigateToRoute("aiso_chat") }
@@ -429,10 +429,10 @@ fun MainScreen(
                         onClick = { onNavigateToTongueTwisterDuel() }
                     ),
                     FeatureItem(
-                        title = "Análisis de Velocidad",
-                        subtitle = "Mide tus palabras por minuto y ritmo escénico",
-                        icon = Icons.Default.Speed,
-                        badge = null,
+                        title = "Análisis de Discursos",
+                        subtitle = "Escucha hasta 10 min y transcribe en versión editorial con correcciones",
+                        icon = Icons.Default.Mic,
+                        badge = "EDITORIAL",
                         cardGradient = listOf(Color(0xFF065F46), Color(0xFF047857)),
                         iconBgColor = Color(0xFF34D399),
                         onClick = { onNavigateToRoute("speech_analysis") }
@@ -653,6 +653,36 @@ fun MainScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // BOTÓN DE ANÁLISIS DE DISCURSOS CON MICRÓFONO (HASTA 10 MIN)
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color(0xFF059669),
+                            shadowElevation = 4.dp,
+                            border = BorderStroke(1.5.dp, Color(0xFF6EE7B7)),
+                            modifier = Modifier
+                                .testTag("top_btn_speech_analysis")
+                                .clickable { onNavigateToRoute("speech_analysis") }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Mic,
+                                    contentDescription = "Análisis de Discursos",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Analizar",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                        }
+
                         // BOTÓN DE ACCESO DIRECTO A LA IA - RESALTADO Y 100% VISIBLE
                         Surface(
                             shape = RoundedCornerShape(20.dp),
@@ -664,22 +694,21 @@ fun MainScreen(
                                 .clickable { onNavigateToRoute("aiso_chat") }
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.AutoAwesome,
                                     contentDescription = "AISO IA",
                                     tint = Color(0xFFFDE047),
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(17.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     text = "AISO IA",
                                     color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 0.5.sp
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold
                                 )
                             }
                         }
@@ -737,11 +766,11 @@ fun MainScreen(
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // 1. BANNER DESTACADO DE ACCESO A AISO IA (TUTOR VIRTUAL)
+            // 1. BANNER COMPACTO Y PROPORCIONADO DE ACCESO A TUTOR AISO IA
             item {
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    shadowElevation = 3.dp,
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 2.dp,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
@@ -752,10 +781,10 @@ fun MainScreen(
                             .fillMaxWidth()
                             .background(
                                 Brush.horizontalGradient(
-                                    listOf(Color(0xFF312E81), Color(0xFF4338CA), Color(0xFF6366F1))
+                                    listOf(Color(0xFF312E81), Color(0xFF4338CA), Color(0xFF4F46E5))
                                 )
                             )
-                            .padding(16.dp)
+                            .padding(horizontal = 14.dp, vertical = 11.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -768,28 +797,29 @@ fun MainScreen(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(46.dp)
+                                        .size(36.dp)
                                         .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.2f))
-                                        .border(1.5.dp, Color(0xFFFDE047), CircleShape),
+                                        .background(Color.White.copy(alpha = 0.18f))
+                                        .border(1.dp, Color(0xFFFDE047), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.AutoAwesome,
                                         contentDescription = null,
                                         tint = Color(0xFFFDE047),
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "TUTOR AISO IA",
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Black,
+                                            text = "Tutor AISO IA",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.ExtraBold,
                                             color = Color.White,
-                                            letterSpacing = 0.5.sp
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Surface(
@@ -797,44 +827,47 @@ fun MainScreen(
                                             color = Color(0xFFFDE047)
                                         ) {
                                             Text(
-                                                text = "EN VIVO",
+                                                text = "PRO",
                                                 fontSize = 9.sp,
-                                                fontWeight = FontWeight.ExtraBold,
+                                                fontWeight = FontWeight.Black,
                                                 color = Color(0xFF1E1B4B),
-                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                maxLines = 1,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                             )
                                         }
                                     }
                                     Text(
-                                        text = "Tu mentor de oratoria y discursos 24/7",
-                                        fontSize = 12.sp,
-                                        color = Color.White.copy(alpha = 0.9f),
-                                        fontWeight = FontWeight.Medium
+                                        text = "Tu mentor de oratoria y discursos al instante",
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.88f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(10.dp),
                                 color = Color.White,
-                                shadowElevation = 2.dp
+                                shadowElevation = 1.dp
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "CHATEAR",
+                                        text = "Chatear",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF4338CA)
+                                        color = Color(0xFF4338CA),
+                                        maxLines = 1
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                         contentDescription = null,
                                         tint = Color(0xFF4338CA),
-                                        modifier = Modifier.size(13.dp)
+                                        modifier = Modifier.size(12.dp)
                                     )
                                 }
                             }

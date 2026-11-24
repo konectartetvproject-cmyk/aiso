@@ -114,6 +114,11 @@ fun TechniquesListScreen(
             "conclusion_5" -> Pair(Color(0xFFFB8C00), Icons.Default.Pets)
             "conclusion_6" -> Pair(Color(0xFFF4511E), Icons.Default.Person)
             "conclusion_7" -> Pair(Color(0xFF6D4C41), Icons.Default.Signpost)
+            "conclusion_8" -> Pair(Color(0xFF00838F), Icons.Default.Check)
+            "conclusion_9" -> Pair(Color(0xFF2E7D32), Icons.Default.MergeType)
+            "metodo_aiso" -> Pair(Color(0xFF1565C0), Icons.Default.AutoStories)
+            "pasos_11" -> Pair(Color(0xFFAD1457), Icons.Default.FormatListNumbered)
+            "orador_consciente" -> Pair(Color(0xFF6A1B9A), Icons.Default.Psychology)
             else -> Pair(Color(0xFF757575), Icons.Default.AutoFixHigh)
         }
     }

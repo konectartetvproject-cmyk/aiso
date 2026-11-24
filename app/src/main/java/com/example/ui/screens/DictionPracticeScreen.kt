@@ -47,9 +47,9 @@ fun DictionPracticeScreen(
 
     val practicePhrases = remember {
         listOf(
-            "Reto de Laura (D final)" to "La libertad de la ciudad depende de nuestra capacidad de decir la verdad con claridad y dignidad.",
-            "Lápiz entre los dientes" to "El orador extraordinario articula cada consonante con precisión, proyectando su voz desde el diafragma.",
-            "Agilidad R y TR" to "Tres tristes tigres tragaban trigo en un trigal mientras el ferrocarril recorría rápido los rieles."
+            "Consonantes finales (Cap. 10)" to "La libertad de la ciudad depende de nuestra capacidad de decir la verdad con claridad, respeto y dignidad.",
+            "Precisión léxica RAE (Cap. 11)" to "Hubo varias preguntas en la sala, y aunque estaban medio confundidos, aclaramos el propósito a partir de datos verificados.",
+            "Articulación y Ritmo (Cap. 10)" to "El orador consciente comprende el concepto, comparte la historia y propone técnicas claras hablando desde el corazón."
         )
     }
 

@@ -41,12 +41,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -193,6 +196,10 @@ fun QuotesScreen(
         if (filteredTips.isNotEmpty()) tipsPagerState.scrollToPage(0)
     }
 
+    val density = LocalDensity.current
+    var headerHeightDp by remember { mutableStateOf(215.dp) }
+    val topContentPadding = headerHeightDp + 16.dp
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -217,6 +224,7 @@ fun QuotesScreen(
                 } else if (isCatalogMode) {
                     QuotesCatalogListView(
                         quotes = filteredQuotes,
+                        topPadding = topContentPadding,
                         onSelectQuote = { index ->
                             isCatalogMode = false
                             coroutineScope.launch {
@@ -236,6 +244,7 @@ fun QuotesScreen(
                         val quote = filteredQuotes[page]
                         QuoteStoryPage(
                             quote = quote,
+                            topPadding = topContentPadding,
                             onToggleFavorite = { viewModel.toggleFavorite(quote.id) },
                             onSpeak = {
                                 tts?.speak(
@@ -266,6 +275,7 @@ fun QuotesScreen(
                         val affirmation = filteredAffirmations[page]
                         AffirmationStoryPage(
                             affirmation = affirmation,
+                            topPadding = topContentPadding,
                             onPractice = { onPracticeAffirmation?.invoke(affirmation.id) },
                             onSpeak = {
                                 tts?.speak(affirmation.text, TextToSpeech.QUEUE_FLUSH, null, affirmation.id)
@@ -289,7 +299,10 @@ fun QuotesScreen(
                         modifier = Modifier.fillMaxSize()
                     ) { page ->
                         val tip = filteredTips[page]
-                        TipStoryPage(tip = tip)
+                        TipStoryPage(
+                            tip = tip,
+                            topPadding = topContentPadding
+                        )
                     }
                 }
             }
@@ -299,17 +312,23 @@ fun QuotesScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .onSizeChanged { size ->
+                    val measured = with(density) { size.height.toDp() }
+                    if (measured > 80.dp) {
+                        headerHeightDp = measured
+                    }
+                }
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            Color.Black.copy(alpha = 0.82f),
-                            Color.Black.copy(alpha = 0.45f),
+                            Color.Black.copy(alpha = 0.86f),
+                            Color.Black.copy(alpha = 0.55f),
                             Color.Transparent
                         )
                     )
                 )
                 .statusBarsPadding()
-                .padding(bottom = 12.dp)
+                .padding(top = 4.dp, bottom = 14.dp)
         ) {
             // Rayitas de progreso segmentadas (Instagram Story bars)
             val currentItemCount = when (currentTab) {
@@ -352,7 +371,7 @@ fun QuotesScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -367,7 +386,7 @@ fun QuotesScreen(
                         ) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
 
                     // Selector de 3 Secciones (Pills Switch)
@@ -376,13 +395,13 @@ fun QuotesScreen(
                         color = Color.Black.copy(alpha = 0.65f),
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
                     ) {
-                        Row(modifier = Modifier.padding(3.dp)) {
+                        Row(modifier = Modifier.padding(4.dp)) {
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(if (currentTab == InspirationTab.FRASES) AmberGold else Color.Transparent)
                                     .clickable { currentTab = InspirationTab.FRASES }
-                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
@@ -409,7 +428,7 @@ fun QuotesScreen(
                                         currentTab = InspirationTab.AFIRMACIONES
                                         isCatalogMode = false
                                     }
-                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
@@ -436,7 +455,7 @@ fun QuotesScreen(
                                         currentTab = InspirationTab.TIPS
                                         isCatalogMode = false
                                     }
-                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
@@ -545,11 +564,13 @@ fun QuotesScreen(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
                 )
             }
 
-            // Carrusel horizontal de áreas / categorías
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Carrusel horizontal de áreas / categorías con márgenes amplios
             val activeCategories = when (currentTab) {
                 InspirationTab.FRASES -> quoteCategories
                 InspirationTab.AFIRMACIONES -> affirmationCategories
@@ -563,19 +584,19 @@ fun QuotesScreen(
 
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(activeCategories) { category ->
                     val isSelected = activeSelected == category
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(if (isSelected) Color.White else Color.Black.copy(alpha = 0.55f))
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (isSelected) Color.White else Color.Black.copy(alpha = 0.6f))
                             .border(
                                 width = if (isSelected) 0.dp else 1.dp,
-                                color = Color.White.copy(alpha = 0.25f),
-                                shape = RoundedCornerShape(18.dp)
+                                color = Color.White.copy(alpha = 0.28f),
+                                shape = RoundedCornerShape(20.dp)
                             )
                             .clickable {
                                 when (currentTab) {
@@ -584,12 +605,12 @@ fun QuotesScreen(
                                     InspirationTab.TIPS -> selectedTipCategory = category
                                 }
                             }
-                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         Text(
                             text = category,
                             color = if (isSelected) Color.Black else Color.White,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             fontSize = 12.sp
                         )
                     }
@@ -598,26 +619,27 @@ fun QuotesScreen(
 
             // Segundo carrusel de Autores / Orígenes cuando estamos en la pestaña FRASES
             if (currentTab == InspirationTab.FRASES && availableAuthors.size > 2) {
+                Spacer(modifier = Modifier.height(4.dp))
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(availableAuthors) { author ->
                         val isAuthorSelected = selectedAuthor == author
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(16.dp))
                                 .background(
-                                    if (isAuthorSelected) AmberGold.copy(alpha = 0.9f)
-                                    else Color.White.copy(alpha = 0.12f)
+                                    if (isAuthorSelected) AmberGold.copy(alpha = 0.92f)
+                                    else Color.White.copy(alpha = 0.14f)
                                 )
                                 .clickable { viewModel.selectAuthor(author) }
-                                .padding(horizontal = 11.dp, vertical = 4.dp)
+                                .padding(horizontal = 14.dp, vertical = 7.dp)
                         ) {
                             Text(
                                 text = if (author == "Todos") "✍️ Todos los autores" else author,
-                                color = if (isAuthorSelected) MidnightIndigo else Color.White.copy(alpha = 0.9f),
+                                color = if (isAuthorSelected) MidnightIndigo else Color.White.copy(alpha = 0.92f),
                                 fontWeight = if (isAuthorSelected) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 11.sp
                             )
@@ -672,6 +694,7 @@ private fun EmptyInspirationState(
 @Composable
 fun QuotesCatalogListView(
     quotes: List<OratoryQuote>,
+    topPadding: Dp = 220.dp,
     onSelectQuote: (Int) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onSpeakQuote: (OratoryQuote) -> Unit
@@ -686,8 +709,8 @@ fun QuotesCatalogListView(
                     listOf(Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF0F172A))
                 )
             ),
-        contentPadding = PaddingValues(top = 175.dp, bottom = 36.dp, start = 16.dp, end = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(top = topPadding + 6.dp, bottom = 40.dp, start = 22.dp, end = 22.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             Surface(
@@ -856,6 +879,7 @@ fun QuotesCatalogListView(
 @Composable
 fun QuoteStoryPage(
     quote: OratoryQuote,
+    topPadding: Dp = 220.dp,
     onToggleFavorite: () -> Unit,
     onSpeak: () -> Unit
 ) {
@@ -910,256 +934,270 @@ fun QuoteStoryPage(
             }
         }
 
-        // Tarjeta central estilo Historia de Instagram
+        // Contenedor estructurado con márgenes generosos entre los botones superiores, la tarjeta y las acciones inferiores
         Column(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(horizontal = 20.dp)
-                .padding(top = 80.dp, bottom = 74.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .background(Color.Black.copy(alpha = 0.48f))
-                .border(
-                    width = 1.2.dp,
-                    brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))),
-                    shape = RoundedCornerShape(32.dp)
-                )
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(AmberGold.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.FormatQuote,
-                    contentDescription = null,
-                    tint = AmberGold,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Etiqueta de Categoría
-            Surface(
-                color = AmberGold.copy(alpha = 0.18f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = quote.category.uppercase(),
-                    color = AmberGold,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.4.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                text = "«${quote.text}»",
-                color = Color.White,
-                fontSize = if (quote.text.length > 165) 18.sp else 21.sp,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                lineHeight = if (quote.text.length > 165) 27.sp else 31.sp,
-                modifier = Modifier.graphicsLayer { shadowElevation = 8.dp.toPx() }
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Box(
-                modifier = Modifier
-                    .width(48.dp)
-                    .height(2.dp)
-                    .clip(RoundedCornerShape(1.dp))
-                    .background(AmberGold)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "— ${quote.author}",
-                color = AmberGold,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                letterSpacing = 0.6.sp
-            )
-
-            // Fuente: Libro, Película, Obra o Discurso
-            if (quote.source.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Surface(
-                    color = Color.White.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = when {
-                                quote.category.contains("Cine") -> Icons.Default.Movie
-                                quote.category.contains("Libros") -> Icons.Default.MenuBook
-                                quote.category.contains("Discursos") -> Icons.Default.RecordVoiceOver
-                                else -> Icons.Default.AutoAwesome
-                            },
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.85f),
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = quote.source,
-                            color = Color.White.copy(alpha = 0.88f),
-                            fontSize = 12.sp,
-                            fontStyle = FontStyle.Italic,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
-
-            // Tip Retórico: Cómo usar esta frase en un discurso
-            if (quote.usageTip.isNotBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Surface(
-                    color = AmberGold.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(16.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AmberGold.copy(alpha = 0.3f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.TipsAndUpdates,
-                            contentDescription = null,
-                            tint = AmberGold,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "USO EN EL ESCENARIO",
-                                color = AmberGold,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 1.sp
-                            )
-                            Text(
-                                text = quote.usageTip,
-                                color = Color.White.copy(alpha = 0.92f),
-                                fontSize = 12.sp,
-                                lineHeight = 17.sp
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Barra inferior con Favorito, Escuchar TTS, Copiar y Compartir Historia
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
+                .fillMaxSize()
+                .padding(top = topPadding)
                 .navigationBarsPadding()
-                .padding(bottom = 18.dp),
+                .padding(bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                IconButton(
-                    onClick = onToggleFavorite,
+                // Tarjeta central estilo Historia de Instagram
+                Column(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.55f))
-                        .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(Color.Black.copy(alpha = 0.50f))
+                        .border(
+                            width = 1.2.dp,
+                            brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))),
+                            shape = RoundedCornerShape(28.dp)
+                        )
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        imageVector = if (quote.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favorito",
-                        tint = if (quote.isFavorite) CoralWarning else Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(AmberGold.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FormatQuote,
+                            contentDescription = null,
+                            tint = AmberGold,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
 
-                IconButton(
-                    onClick = onSpeak,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.55f))
-                        .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = "Escuchar Entonación",
-                        tint = AmberGold,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                IconButton(
-                    onClick = { copyQuoteToClipboard(context, quote) },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.55f))
-                        .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Copiar Frase",
-                        tint = Color.White,
-                        modifier = Modifier.size(21.dp)
-                    )
-                }
+                    // Etiqueta de Categoría
+                    Surface(
+                        color = AmberGold.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = quote.category.uppercase(),
+                            color = AmberGold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.4.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                        )
+                    }
 
-                Button(
-                    onClick = {
-                        if (!isSharing) {
-                            isSharing = true
-                            coroutineScope.launch {
-                                shareQuoteAsImage(context, quote) { isSharing = false }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "«${quote.text}»",
+                        color = Color.White,
+                        fontSize = if (quote.text.length > 165) 17.sp else 20.sp,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                        lineHeight = if (quote.text.length > 165) 26.sp else 29.sp,
+                        modifier = Modifier.graphicsLayer { shadowElevation = 8.dp.toPx() }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .width(48.dp)
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp))
+                            .background(AmberGold)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "— ${quote.author}",
+                        color = AmberGold,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = 0.6.sp
+                    )
+
+                    // Fuente: Libro, Película, Obra o Discurso
+                    if (quote.source.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Surface(
+                            color = Color.White.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = when {
+                                        quote.category.contains("Cine") -> Icons.Default.Movie
+                                        quote.category.contains("Libros") -> Icons.Default.MenuBook
+                                        quote.category.contains("Discursos") -> Icons.Default.RecordVoiceOver
+                                        else -> Icons.Default.AutoAwesome
+                                    },
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.85f),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = quote.source,
+                                    color = Color.White.copy(alpha = 0.88f),
+                                    fontSize = 12.sp,
+                                    fontStyle = FontStyle.Italic,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
-                    shape = RoundedCornerShape(26.dp),
-                    modifier = Modifier.height(48.dp)
-                ) {
-                    if (isSharing) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MidnightIndigo, strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Creando...", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    } else {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Compartir", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+
+                    // Tip Retórico: Cómo usar esta frase en un discurso
+                    if (quote.usageTip.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Surface(
+                            color = AmberGold.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, AmberGold.copy(alpha = 0.3f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.TipsAndUpdates,
+                                    contentDescription = null,
+                                    tint = AmberGold,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "USO EN EL ESCENARIO",
+                                        color = AmberGold,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 1.sp
+                                    )
+                                    Text(
+                                        text = quote.usageTip,
+                                        color = Color.White.copy(alpha = 0.92f),
+                                        fontSize = 12.sp,
+                                        lineHeight = 17.sp
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Swipe, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(15.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Desliza para explorar más frases o usa el botón de lista arriba", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+            // Barra inferior con Favorito, Escuchar TTS, Copiar y Compartir Historia
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onToggleFavorite,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.55f))
+                            .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (quote.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (quote.isFavorite) CoralWarning else Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onSpeak,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.55f))
+                            .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = "Escuchar Entonación",
+                            tint = AmberGold,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { copyQuoteToClipboard(context, quote) },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.55f))
+                            .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copiar Frase",
+                            tint = Color.White,
+                            modifier = Modifier.size(21.dp)
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            if (!isSharing) {
+                                isSharing = true
+                                coroutineScope.launch {
+                                    shareQuoteAsImage(context, quote) { isSharing = false }
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
+                        shape = RoundedCornerShape(26.dp),
+                        modifier = Modifier.height(48.dp)
+                    ) {
+                        if (isSharing) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MidnightIndigo, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Creando...", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        } else {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Compartir", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Swipe, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(15.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Desliza para explorar más frases o usa el botón de lista arriba", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+                }
             }
         }
     }
@@ -1176,6 +1214,7 @@ private fun copyQuoteToClipboard(context: Context, quote: OratoryQuote) {
 @Composable
 fun AffirmationStoryPage(
     affirmation: Affirmation,
+    topPadding: Dp = 215.dp,
     onPractice: () -> Unit,
     onSpeak: () -> Unit = {}
 ) {
@@ -1214,174 +1253,192 @@ fun AffirmationStoryPage(
             }
         }
 
-        // Tarjeta central estilo Historia de Instagram
         Column(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(horizontal = 24.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .background(Color.Black.copy(alpha = 0.45f))
-                .border(
-                    width = 1.2.dp,
-                    brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))),
-                    shape = RoundedCornerShape(32.dp)
-                )
-                .padding(horizontal = 26.dp, vertical = 36.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(30.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Surface(
-                color = Color.White.copy(alpha = 0.18f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "✨ ${affirmation.category.uppercase()}",
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.5.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                text = affirmation.title,
-                color = AmberGold,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                text = "«${affirmation.text}»",
-                color = Color.White,
-                fontSize = 21.sp,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                lineHeight = 31.sp,
-                modifier = Modifier.graphicsLayer { shadowElevation = 8.dp.toPx() }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Box(
-                modifier = Modifier
-                    .width(48.dp)
-                    .height(2.dp)
-                    .clip(RoundedCornerShape(1.dp))
-                    .background(Color.White.copy(alpha = 0.6f))
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = "Afirmación Diaria para Oradores",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        // Barra inferior
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
+                .fillMaxSize()
+                .padding(top = topPadding)
                 .navigationBarsPadding()
-                .padding(bottom = 24.dp),
+                .padding(bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                IconButton(
-                    onClick = onSpeak,
+                // Tarjeta central estilo Historia de Instagram
+                Column(
                     modifier = Modifier
-                        .size(50.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .border(
+                            width = 1.2.dp,
+                            brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))),
+                            shape = RoundedCornerShape(28.dp)
+                        )
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 26.dp, vertical = 30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = "Escuchar afirmación",
-                        tint = AmberGold
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Surface(
+                        color = Color.White.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "✨ ${affirmation.category.uppercase()}",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = affirmation.title,
+                        color = AmberGold,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "«${affirmation.text}»",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 29.sp,
+                        modifier = Modifier.graphicsLayer { shadowElevation = 8.dp.toPx() }
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .width(48.dp)
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp))
+                            .background(Color.White.copy(alpha = 0.6f))
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Afirmación Diaria para Oradores",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
                     )
                 }
+            }
 
-                Button(
-                    onClick = {
-                        if (!isSharing) {
-                            isSharing = true
-                            coroutineScope.launch {
-                                shareAffirmationAsImage(context, affirmation) { isSharing = false }
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.25f), contentColor = Color.White),
-                    shape = RoundedCornerShape(26.dp),
-                    modifier = Modifier.height(50.dp)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Barra inferior
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isSharing) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    IconButton(
+                        onClick = onSpeak,
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = "Escuchar afirmación",
+                            tint = AmberGold
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            if (!isSharing) {
+                                isSharing = true
+                                coroutineScope.launch {
+                                    shareAffirmationAsImage(context, affirmation) { isSharing = false }
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.25f), contentColor = Color.White),
+                        shape = RoundedCornerShape(26.dp),
+                        modifier = Modifier.height(50.dp)
+                    ) {
+                        if (isSharing) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Creando...", fontWeight = FontWeight.Bold)
+                        } else {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Compartir", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+
+                    Button(
+                        onClick = onPractice,
+                        colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
+                        shape = RoundedCornerShape(26.dp),
+                        modifier = Modifier.height(50.dp)
+                    ) {
+                        Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Creando...", fontWeight = FontWeight.Bold)
-                    } else {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Compartir", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("Practicar con Voz", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
 
-                Button(
-                    onClick = onPractice,
-                    colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
-                    shape = RoundedCornerShape(26.dp),
-                    modifier = Modifier.height(50.dp)
-                ) {
-                    Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Practicar con Voz", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Swipe, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Desliza horizontalmente para ver la siguiente afirmación", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
                 }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Swipe, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Desliza horizontalmente para ver la siguiente afirmación", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
             }
         }
     }
 }
 
 @Composable
-fun TipStoryPage(tip: Recommendation) {
+fun TipStoryPage(
+    tip: Recommendation,
+    topPadding: Dp = 215.dp
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var isSharing by remember { mutableStateOf(false) }
@@ -1405,133 +1462,148 @@ fun TipStoryPage(tip: Recommendation) {
             }
         }
 
-        // Tarjeta central estilo Historia de Instagram
         Column(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(horizontal = 24.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .background(Color.Black.copy(alpha = 0.48f))
-                .border(
-                    width = 1.2.dp,
-                    brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))),
-                    shape = RoundedCornerShape(32.dp)
-                )
-                .padding(horizontal = 26.dp, vertical = 36.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(AmberGold.copy(alpha = 0.25f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lightbulb,
-                    contentDescription = null,
-                    tint = AmberGold,
-                    modifier = Modifier.size(30.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Surface(
-                color = AmberGold.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "💡 TIP DE ORATORIA • ${tip.category.uppercase()}",
-                    color = AmberGold,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.5.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = tip.title,
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = tip.text,
-                color = Color.White.copy(alpha = 0.95f),
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 28.sp
-            )
-
-            Spacer(modifier = Modifier.height(26.dp))
-
-            Box(
-                modifier = Modifier
-                    .width(48.dp)
-                    .height(2.dp)
-                    .clip(RoundedCornerShape(1.dp))
-                    .background(AmberGold)
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = "Técnica Práctica de Escenario",
-                color = AmberGold,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        // Barra inferior
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
+                .fillMaxSize()
+                .padding(top = topPadding)
                 .navigationBarsPadding()
-                .padding(bottom = 24.dp),
+                .padding(bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(
-                onClick = {
-                    if (!isSharing) {
-                        isSharing = true
-                        coroutineScope.launch {
-                            shareTipAsImage(context, tip) { isSharing = false }
-                        }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
-                shape = RoundedCornerShape(26.dp),
-                modifier = Modifier.height(50.dp)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                if (isSharing) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MidnightIndigo, strokeWidth = 2.dp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Creando...", fontWeight = FontWeight.Bold)
-                } else {
-                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Compartir Tip en Historias", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                // Tarjeta central estilo Historia de Instagram
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(Color.Black.copy(alpha = 0.48f))
+                        .border(
+                            width = 1.2.dp,
+                            brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))),
+                            shape = RoundedCornerShape(28.dp)
+                        )
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 26.dp, vertical = 30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                            .background(AmberGold.copy(alpha = 0.25f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lightbulb,
+                            contentDescription = null,
+                            tint = AmberGold,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Surface(
+                        color = AmberGold.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "💡 TIP DE ORATORIA • ${tip.category.uppercase()}",
+                            color = AmberGold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = tip.title,
+                        color = Color.White,
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = tip.text,
+                        color = Color.White.copy(alpha = 0.95f),
+                        fontSize = 17.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 26.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(22.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .width(48.dp)
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp))
+                            .background(AmberGold)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Técnica Práctica de Escenario",
+                        color = AmberGold,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Swipe, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Desliza horizontalmente para ver el siguiente tip", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+            // Barra inferior
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(
+                    onClick = {
+                        if (!isSharing) {
+                            isSharing = true
+                            coroutineScope.launch {
+                                shareTipAsImage(context, tip) { isSharing = false }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MidnightIndigo),
+                    shape = RoundedCornerShape(26.dp),
+                    modifier = Modifier.height(50.dp)
+                ) {
+                    if (isSharing) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MidnightIndigo, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Creando...", fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Compartir Tip en Historias", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Swipe, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Desliza horizontalmente para ver el siguiente tip", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+                }
             }
         }
     }

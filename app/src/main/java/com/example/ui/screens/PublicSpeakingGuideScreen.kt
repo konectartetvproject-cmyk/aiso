@@ -27,17 +27,17 @@ data class PublicSpeakingStep(
 )
 
 val guideSteps = listOf(
-    PublicSpeakingStep(1, "Entrar al Escenario", "Camina con confianza y una postura erguida para establecer el tono de la presentación.", Icons.Default.ArrowForward),
-    PublicSpeakingStep(2, "Mirar al Público", "Haz contacto visual con la audiencia para crear una conexión y demostrar que estás comprometido.", Icons.Default.Visibility),
-    PublicSpeakingStep(3, "Saludar", "Un saludo sencillo ayuda a romper el hielo y establecer una relación amigable.", Icons.Default.Face),
-    PublicSpeakingStep(4, "Técnica de Inicio", "Usa una anécdota, pregunta o cita para captar la atención del público desde el principio.", Icons.Default.Lightbulb),
-    PublicSpeakingStep(5, "Nombre del Orador", "Preséntate claramente para establecer tu identidad y credibilidad.", Icons.Default.Person),
-    PublicSpeakingStep(6, "Nombre del Tema", "Introduce el tema del discurso para que la audiencia sepa qué esperar.", Icons.Default.Info),
-    PublicSpeakingStep(7, "Desarrollo del Discurso", "Organiza el contenido de manera lógica y utiliza ejemplos para mantener el interés.", Icons.Default.List),
-    PublicSpeakingStep(8, "Anunciar Conclusión", "Avisa a la audiencia que estás por terminar para que presten atención a tus últimas palabras.", Icons.Default.Notifications),
-    PublicSpeakingStep(9, "Técnica de Conclusión", "Cierra el discurso de manera efectiva con un resumen, una llamada a la acción o una cita poderosa.", Icons.Default.Done),
-    PublicSpeakingStep(10, "Decir Gracias", "Agradece al público por su atención para cerrar la presentación de manera respetuosa.", Icons.Default.Favorite),
-    PublicSpeakingStep(11, "Recibir Aplausos", "Mantén una postura relajada y sonríe para disfrutar y reconocer el esfuerzo de tu presentación.", Icons.Default.Star)
+    PublicSpeakingStep(1, "Entrar al Escenario (Momento I)", "Camina con serenidad, sitúate con comodidad y aparta hojas, fichas o tarjetas de lectura.", Icons.Default.ArrowForward),
+    PublicSpeakingStep(2, "Mirar al Público (Momento I)", "Distribuye la atención visual con naturalidad por los sectores de la sala sin convertirla en inspección rígida.", Icons.Default.Visibility),
+    PublicSpeakingStep(3, "Saludar (Momento I)", "Saludo breve, cordial y acorde al momento del día («Muy buenos días a todos»).", Icons.Default.Face),
+    PublicSpeakingStep(4, "Técnica de Inicio I01–I10 (Momento II)", "Capta el interés antes de decir tu nombre usando una de las 10 técnicas de inicio del Capítulo 4.", Icons.Default.Lightbulb),
+    PublicSpeakingStep(5, "Nombre del Orador (Momento II)", "Preséntate después de la técnica de inicio («Mi nombre es...»), mencionando solo lo pertinente para el tema.", Icons.Default.Person),
+    PublicSpeakingStep(6, "Nombre del Tema (Momento II)", "Delimita con claridad qué se trabajará («Hoy hablaremos sobre...»).", Icons.Default.Info),
+    PublicSpeakingStep(7, "Desarrollo con el Método AISO (Momento II)", "Recorre con tus propias palabras y sin leer las 3 fases: CONCEPTO → HISTORIA → TÉCNICAS O CONSEJOS, unidas por sus puentes de transición.", Icons.Default.List),
+    PublicSpeakingStep(8, "Anunciar Conclusión (Momento III)", "Avisa que tu intervención llega al cierre («Para concluir...» o «En conclusión...») sin abrir un tema nuevo.", Icons.Default.Notifications),
+    PublicSpeakingStep(9, "Técnica de Conclusión C01–C09 (Momento III)", "Deja la idea final con sentido claro mediante una de las 9 técnicas de conclusión del Capítulo 5.", Icons.Default.Done),
+    PublicSpeakingStep(10, "Decir Gracias (Momento III)", "Cierra tus palabras con sobriedad y respeto («Muchas gracias»).", Icons.Default.Favorite),
+    PublicSpeakingStep(11, "Recibir Aplausos (Momento III)", "Permanece con serenidad recibiendo los aplausos o la respuesta final de la sala antes de retirarte sin prisa.", Icons.Default.Star)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,7 +46,7 @@ fun PublicSpeakingGuideScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Guía de Oratoria", fontWeight = FontWeight.Bold) },
+                title = { Text("Guía AISO: Los 11 Pasos (v07)", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -69,16 +69,16 @@ fun PublicSpeakingGuideScreen(onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    text = "Los 11 Pasos para Hablar en Público",
+                    text = "Los 11 Pasos y el Método AISO",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Sigue esta estructura probada para entregar presentaciones seguras y exitosas, basadas en los principios de AISO IA.",
+                    text = "Regla de práctica AISO (Carlos Enrique Lopez Adames): La preparación puede escribirse, pero al subir a exponer se apartan el papel, las fichas y el teleprompter para hablar desde el corazón y con palabras propias.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }

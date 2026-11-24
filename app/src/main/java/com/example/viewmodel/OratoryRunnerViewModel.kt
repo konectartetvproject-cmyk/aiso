@@ -10,17 +10,28 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class RunnerItemType(val icon: String, val isObstacle: Boolean) {
-    MULETILLA("🗯️", true),
-    PANICO("😨", true),
-    PALABRA_CLAVE("💡", false)
+enum class RunnerItemType(
+    val icon: String,
+    val label: String,
+    val isObstacle: Boolean,
+    val points: Int = 0,
+    val grantsShield: Boolean = false
+) {
+    MULETILLA("🗯️", "«Eh... Este...»", true),
+    PANICO("😰", "Pánico Escénico", true),
+    MENTE_BLANCO("🌫️", "Mente en Blanco", true),
+    TOXICO("🎯", "Pregunta Trampa", true),
+    PALABRA_CLAVE("💡", "Idea Central", false, points = 15),
+    PAUSA_PODER("⏸️", "Pausa de Poder", false, points = 25),
+    CONTACTO_VISUAL("👀", "Mirada 3-5s", false, points = 20),
+    RESPIRACION_ESCUDO("🛡️", "Respiración Caja", false, points = 15, grantsShield = true)
 }
 
 data class RunnerItem(
     val id: Int,
     val type: RunnerItemType,
     val lane: Int,
-    var y: Float
+    val y: Float
 )
 
 data class RunnerGameState(
@@ -28,8 +39,16 @@ data class RunnerGameState(
     val items: List<RunnerItem> = emptyList(),
     val isGameOver: Boolean = false,
     val score: Int = 0,
+    val highScore: Int = 0,
+    val lives: Int = 3,
+    val maxLives: Int = 3,
+    val hasShield: Boolean = false,
+    val combo: Int = 0,
+    val level: Int = 1,
     val isPlaying: Boolean = false,
-    val speed: Float = 0.02f
+    val isPaused: Boolean = false,
+    val speed: Float = 0.022f,
+    val lastFeedback: String = "¡Desliza o toca un carril para esquivar muletillas!"
 )
 
 class OratoryRunnerViewModel : ViewModel() {
@@ -40,28 +59,54 @@ class OratoryRunnerViewModel : ViewModel() {
     private var ticks = 0
 
     fun startGame() {
-        _state.value = RunnerGameState(isPlaying = true)
+        val best = _state.value.highScore
+        _state.value = RunnerGameState(
+            isPlaying = true,
+            highScore = best,
+            lives = 3,
+            hasShield = false,
+            combo = 0,
+            level = 1
+        )
         ticks = 0
         gameLoopJob?.cancel()
         gameLoopJob = viewModelScope.launch {
             while (true) {
-                delay(50)
-                if (_state.value.isPlaying && !_state.value.isGameOver) {
+                delay(40)
+                val current = _state.value
+                if (current.isPlaying && !current.isGameOver && !current.isPaused) {
                     updateGame()
                 }
             }
         }
     }
 
+    fun togglePause() {
+        _state.update { it.copy(isPaused = !it.isPaused) }
+    }
+
     fun moveLeft() {
         _state.update {
-            if (it.playerLane > 0) it.copy(playerLane = it.playerLane - 1) else it
+            if (it.isPlaying && !it.isPaused && it.playerLane > 0) {
+                it.copy(playerLane = it.playerLane - 1)
+            } else it
         }
     }
 
     fun moveRight() {
         _state.update {
-            if (it.playerLane < 2) it.copy(playerLane = it.playerLane + 1) else it
+            if (it.isPlaying && !it.isPaused && it.playerLane < 2) {
+                it.copy(playerLane = it.playerLane + 1)
+            } else it
+        }
+    }
+
+    fun setLane(lane: Int) {
+        if (lane !in 0..2) return
+        _state.update {
+            if (it.isPlaying && !it.isPaused) {
+                it.copy(playerLane = lane)
+            } else it
         }
     }
 
@@ -69,48 +114,87 @@ class OratoryRunnerViewModel : ViewModel() {
         ticks++
         _state.update { state ->
             var newScore = state.score
+            var newLives = state.lives
+            var newShield = state.hasShield
+            var newCombo = state.combo
+            var feedback = state.lastFeedback
             var isGameOver = false
             var newItems = state.items.toMutableList()
-            var speed = state.speed
-            if (ticks % 200 == 0) {
-                speed += 0.002f
-            }
-            val spawnRate = (30 - (speed * 100).toInt()).coerceAtLeast(8)
+            val newLevel = (newScore / 150) + 1
+            val speed = (0.020f + (newLevel - 1) * 0.0035f).coerceAtMost(0.045f)
+
+            val spawnRate = (24 - (newLevel * 2)).coerceAtLeast(10)
             if (ticks % spawnRate == 0) {
                 val lane = (0..2).random()
-                val isObstacle = Math.random() > 0.3
-                val type = if (isObstacle) {
-                    if (Math.random() > 0.5) RunnerItemType.MULETILLA else RunnerItemType.PANICO
-                } else {
-                    RunnerItemType.PALABRA_CLAVE
+                val roll = Math.random()
+                val type = when {
+                    roll < 0.12 && !newShield -> RunnerItemType.RESPIRACION_ESCUDO
+                    roll < 0.48 -> listOf(
+                        RunnerItemType.PALABRA_CLAVE,
+                        RunnerItemType.PAUSA_PODER,
+                        RunnerItemType.CONTACTO_VISUAL
+                    ).random()
+                    else -> listOf(
+                        RunnerItemType.MULETILLA,
+                        RunnerItemType.PANICO,
+                        RunnerItemType.MENTE_BLANCO,
+                        RunnerItemType.TOXICO
+                    ).random()
                 }
-                newItems.add(RunnerItem(nextId++, type, lane, -0.1f))
+                newItems.add(RunnerItem(nextId++, type, lane, -0.12f))
             }
+
             val itemsToRemove = mutableListOf<RunnerItem>()
             newItems = newItems.map { item ->
                 val updatedItem = item.copy(y = item.y + speed)
-                val isColliding = updatedItem.y > 0.8f && updatedItem.y < 0.95f && updatedItem.lane == state.playerLane
+                val isColliding = updatedItem.y in 0.76f..0.93f && updatedItem.lane == state.playerLane
                 if (isColliding) {
+                    itemsToRemove.add(updatedItem)
                     if (updatedItem.type.isObstacle) {
-                        isGameOver = true
+                        if (newShield) {
+                            newShield = false
+                            feedback = "🛡️ ¡Escudo de Respiración absorbió ${updatedItem.type.label}!"
+                        } else {
+                            newLives -= 1
+                            newCombo = 0
+                            feedback = "⚠️ Chocaste con ${updatedItem.type.label} (-1 Confianza)"
+                            if (newLives <= 0) {
+                                isGameOver = true
+                            }
+                        }
                     } else {
-                        newScore += 10
-                        itemsToRemove.add(updatedItem)
+                        newCombo += 1
+                        val multiplier = (1 + (newCombo / 4)).coerceAtMost(4)
+                        val gained = updatedItem.type.points * multiplier
+                        newScore += gained
+                        if (updatedItem.type.grantsShield) {
+                            newShield = true
+                            feedback = "🛡️ ¡Escudo de Respiración de Caja activado!"
+                        } else {
+                            feedback = "✨ +$gained pts • ${updatedItem.type.label}" +
+                                if (multiplier > 1) " (Combo x$multiplier)" else ""
+                        }
                     }
-                }
-                if (updatedItem.y > 1.2f) {
+                } else if (updatedItem.y > 1.15f) {
                     itemsToRemove.add(updatedItem)
                 }
                 updatedItem
             }.toMutableList()
 
             newItems.removeAll(itemsToRemove)
+            val bestScore = maxOf(state.highScore, newScore)
 
             state.copy(
                 items = newItems,
                 score = newScore,
+                highScore = bestScore,
+                lives = newLives,
+                hasShield = newShield,
+                combo = newCombo,
+                level = newLevel,
                 isGameOver = isGameOver,
-                speed = speed
+                speed = speed,
+                lastFeedback = feedback
             )
         }
     }

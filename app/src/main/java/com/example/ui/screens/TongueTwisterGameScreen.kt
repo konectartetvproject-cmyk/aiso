@@ -37,18 +37,15 @@ val tongueTwistersList = listOf(
 )
 
 val readingInstructionsList = listOf(
-    "Léelo alegre 😀",
-    "Léelo triste 😢",
-    "Léelo molesto 😡",
-    "Léelo con asco 🤢",
-    "Léelo con seducción 😏",
-    "Léelo como si estuvieras cantando 🎶",
-    "Escenifica la voz de un personaje 🎭",
-    "Utiliza el acento de algún país 🌍",
-    "Léelo más rápido ⏩",
-    "Léelo más lento ⏪",
-    "Aumenta el volumen 📢",
-    "Disminuye el volumen 🤫"
+    "Consigna AISO — Articulación: Pronuncia cada sílaba completa a velocidad moderada 🗣️",
+    "Consigna AISO — Ritmo: Agrupa por unidades de sentido y haz una pausa limpia en cada punto ⏱️",
+    "Consigna AISO — Intención serena: Léelo con calma, como quien explica una idea importante 🧘‍♂️",
+    "Consigna AISO — Énfasis selectivo: Destaca solo una palabra clave de cada oración 🎯",
+    "Consigna AISO — Dos tomas: Primero lento y preciso, luego a ritmo natural 🔄",
+    "Léelo con alegría y entusiasmo 😀",
+    "Léelo con tono reflexivo y pausado 🤔",
+    "Léelo proyectando desde el abdomen sin forzar la garganta 📢",
+    "Léelo en voz baja cuidando que se entienda cada consonante final 🤫"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

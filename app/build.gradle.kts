@@ -10,18 +10,39 @@ android {
   compileSdk = 36
 
   defaultConfig {
-    applicationId = "com.aistudio.oratoria.pro"
+    applicationId = "com.aistudio.oratoria"
     minSdk = 24
     targetSdk = 36
-    versionCode = 8
-    versionName = "8.0"
+    versionCode = 12
+    versionName = "12.0"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+  }
+
+  signingConfigs {
+    create("release") {
+      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+      storeFile = file(keystorePath)
+      storePassword = System.getenv("STORE_PASSWORD")
+      keyAlias = "upload"
+      keyPassword = System.getenv("KEY_PASSWORD")
+    }
+    create("debugConfig") {
+      storeFile = file("${rootDir}/debug.keystore")
+      storePassword = "android"
+      keyAlias = "androiddebugkey"
+      keyPassword = "android"
+    }
   }
 
   buildTypes {
     release {
+      isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      signingConfig = signingConfigs.getByName("release")
+    }
+    debug {
+      signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
 
@@ -33,6 +54,11 @@ android {
   buildFeatures {
     compose = true
     buildConfig = true
+  }
+
+  dependenciesInfo {
+    includeInApk = false
+    includeInBundle = true
   }
 }
 

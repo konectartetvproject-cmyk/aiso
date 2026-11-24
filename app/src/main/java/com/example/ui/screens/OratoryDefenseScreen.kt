@@ -1,27 +1,30 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.unit.IntOffset
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.viewmodel.DefenseType
@@ -33,360 +36,511 @@ fun OratoryDefenseScreen(
     onBack: () -> Unit,
     viewModel: OratoryDefenseViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
+    BackHandler { onBack() }
     val state by viewModel.state.collectAsState()
-    
-    var draggedDefense by remember { mutableStateOf<DefenseType?>(null) }
-    var dragPosition by remember { mutableStateOf(Offset.Zero) }
-    var boardBounds by remember { mutableStateOf(Rect.Zero) }
+
+    LaunchedEffect(Unit) {
+        if (!state.isPlaying && !state.isGameOver && !state.isLevelComplete) {
+            viewModel.startGame()
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Orador vs Distracciones", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("Defensa del Discurso", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                        Text(
+                            "Oleada ${state.wave} • Estrategia Antinervios",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.78f)
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { viewModel.toggleRemoveMode() }) {
+                        Icon(
+                            Icons.Default.DeleteSweep,
+                            contentDescription = "Retirar técnica",
+                            tint = if (state.isRemoveMode) Color(0xFFF87171) else Color.White
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF0F172A),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
                 )
             )
         }
     ) { paddingValues ->
-        if (!state.isPlaying && !state.isGameOver && !state.isLevelComplete) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A))
+                    )
+                )
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "Defiende tu Discurso",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Coloca técnicas de oratoria para defenderte de las muletillas y nervios. Recolecta 'Confianza' para usar más técnicas.",
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.height(32.dp))
-                Button(onClick = { viewModel.startGame() }, modifier = Modifier.height(56.dp).fillMaxWidth(0.8f)) {
-                    Text("Comenzar", fontSize = 18.sp)
-                }
-            }
-        } else if (state.isGameOver) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "¡Discurso Interrumpido!",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Puntuación: ${state.score}",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(modifier = Modifier.height(32.dp))
-                Button(onClick = { viewModel.startGame() }) {
-                    Text("Reintentar")
-                }
-            }
-        } else if (state.isLevelComplete) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "¡Nivel ${state.wave} Superado!",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Puntuación total: ${state.score}",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(modifier = Modifier.height(32.dp))
-                Button(onClick = { viewModel.nextLevel() }) {
-                    Text("Siguiente Nivel")
-                }
-            }
-        } else {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .background(Color(0xFFE8F5E9))
+                // HUD de Confianza, Progreso de Oleada y Puntos
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                    border = BorderStroke(1.dp, Color(0xFF334155)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                color = Color(0xFFF59E0B).copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Color(0xFFFBBF24))
+                            ) {
+                                Text(
+                                    text = "💡 Confianza: ${state.confidence}",
+                                    color = Color(0xFFFBBF24),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 15.sp,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+
+                            if (state.confidenceDrops.isNotEmpty()) {
+                                FilledTonalButton(
+                                    onClick = { viewModel.collectAllConfidence() },
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = Color(0xFF10B981),
+                                        contentColor = Color.White
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(34.dp)
+                                ) {
+                                    Text("Recolectar +${state.confidenceDrops.sumOf { it.amount }} 💡", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            Text(
+                                text = "${state.score} pts",
+                                color = Color.White,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 18.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        val waveProgress = (state.levelScore.toFloat() / state.targetLevelScore.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Oleada ${state.wave}:",
+                                color = Color(0xFF94A3B8),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            LinearProgressIndicator(
+                                progress = { waveProgress },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(7.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = Color(0xFF10B981),
+                                trackColor = Color(0xFF0F172A)
+                            )
+                            Text(
+                                text = "${(waveProgress * 100).toInt()}%",
+                                color = Color(0xFF10B981),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
+                }
+
+                // Selector de Técnicas de Oratoria
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "Confianza: ${state.confidence} 💡",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF57F17)
-                    )
-                    Text(
-                        text = "Nivel: ${state.wave} | Puntos: ${state.score}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                @OptIn(ExperimentalLayoutApi::class)
-                FlowRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val unlockedDefenses = DefenseType.values().filter { it.requiredWave <= state.wave }
+                    val unlockedDefenses = DefenseType.entries.filter { it.requiredWave <= state.wave }
                     unlockedDefenses.forEach { type ->
-                        val isSelected = state.selectedDefense == type
+                        val isSelected = state.selectedDefense == type && !state.isRemoveMode
                         val canAfford = state.confidence >= type.cost
-                        var cardPosition by remember { mutableStateOf(Offset.Zero) }
-
                         Card(
                             modifier = Modifier
-                                .size(70.dp, 90.dp)
-                                .onGloballyPositioned {
-                                    cardPosition = it.localToRoot(Offset.Zero)
-                                }
-                                .border(
-                                    width = if (isSelected) 3.dp else 0.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .pointerInput(canAfford) {
-                                    if (canAfford) {
-                                        detectDragGestures(
-                                            onDragStart = { _ ->
-                                                draggedDefense = type
-                                                dragPosition = cardPosition
-                                            },
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                dragPosition += dragAmount
-                                            },
-                                            onDragEnd = {
-                                                if (boardBounds.contains(dragPosition)) {
-                                                    val cols = 8
-                                                    val rows = 3
-                                                    val colWidth = boardBounds.width / cols
-                                                    val rowHeight = boardBounds.height / rows
-                                                    
-                                                    val c = ((dragPosition.x - boardBounds.left) / colWidth).toInt()
-                                                    val r = ((dragPosition.y - boardBounds.top) / rowHeight).toInt()
-                                                    
-                                                    if (c in 0 until cols && r in 0 until rows) {
-                                                        viewModel.selectDefense(draggedDefense)
-                                                        viewModel.placeDefense(c, r)
-                                                    }
-                                                }
-                                                draggedDefense = null
-                                            },
-                                            onDragCancel = {
-                                                draggedDefense = null
-                                            }
-                                        )
-                                    }
-                                }
-                                .clickable(enabled = canAfford) {
-                                    if (isSelected) viewModel.selectDefense(null) else viewModel.selectDefense(type)
-                                },
+                                .width(92.dp)
+                                .clickable { viewModel.selectDefense(type) },
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (canAfford) MaterialTheme.colorScheme.surface else Color.LightGray
+                                containerColor = when {
+                                    isSelected -> Color(0xFF0284C7)
+                                    canAfford -> Color(0xFF1E293B)
+                                    else -> Color(0xFF0F172A).copy(alpha = 0.6f)
+                                }
+                            ),
+                            border = BorderStroke(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = when {
+                                    isSelected -> Color(0xFF7DD3FC)
+                                    canAfford -> Color(0xFF334155)
+                                    else -> Color(0xFF1E293B)
+                                }
                             )
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxSize().padding(4.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(type.icon, fontSize = 24.sp)
-                                Text(type.title, fontSize = 10.sp, maxLines = 1)
-                                Text("${type.cost} 💡", fontSize = 10.sp, color = Color(0xFFF57F17), fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = type.title,
+                                    color = if (canAfford) Color.White else Color.Gray,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "${type.cost} 💡",
+                                    color = if (canAfford) Color(0xFFFBBF24) else Color.Gray,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
+                        }
+                    }
+
+                    // Botón de Retirar / Reemplazar
+                    Card(
+                        modifier = Modifier
+                            .width(86.dp)
+                            .clickable { viewModel.toggleRemoveMode() },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (state.isRemoveMode) Color(0xFFDC2626) else Color(0xFF1E293B)
+                        ),
+                        border = BorderStroke(
+                            1.5.dp,
+                            if (state.isRemoveMode) Color(0xFFFCA5A5) else Color(0xFF334155)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp, horizontal = 6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("🔄", fontSize = 24.sp)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Retirar",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Text(
+                                text = "+25 💡",
+                                color = Color(0xFF86EFAC),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
 
-                val collectedDrops = remember { mutableStateListOf<Int>() }
-                val currentDrops by rememberUpdatedState(state.confidenceDrops)
-                
-                Box(
+                // Mensaje de estado / instrucción
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFF1E293B),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = state.statusHint,
+                        color = Color(0xFFCBD5E1),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // Tablero Táctico 6x3
+                val rows = viewModel.rows
+                val cols = viewModel.cols
+
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF064E3B)),
+                    border = BorderStroke(2.dp, Color(0xFF047857)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(8.dp)
-                        .onGloballyPositioned {
-                            boardBounds = it.boundsInRoot()
-                        }
-                        .pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                                    val positions = event.changes.map { it.position }
-                                    val rows = 3
-                                    val cols = 8
-                                    val rowHeightPx = size.height / rows.toFloat()
-                                    val colWidthPx = size.width / cols.toFloat()
-                                    
-                                    positions.forEach { pos ->
-                                        currentDrops.forEach { drop ->
-                                            if (drop.id !in collectedDrops) {
-                                                val dropX = colWidthPx * drop.x + 20.dp.toPx()
-                                                val dropY = rowHeightPx * drop.y.coerceAtLeast(0f) + 20.dp.toPx()
-                                                val dist = kotlin.math.hypot((pos.x - dropX).toDouble(), (pos.y - dropY).toDouble())
-                                                if (dist < 40.dp.toPx()) {
-                                                    collectedDrops.add(drop.id)
-                                                    viewModel.collectConfidence(drop.id)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
                 ) {
-                    val rows = 3
-                    val cols = 8
-                    
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        for (r in 0 until rows) {
-                            Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                                for (c in 0 until cols) {
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .fillMaxHeight()
-                                            .border(0.5.dp, Color.Black.copy(alpha = 0.1f))
-                                            .clickable { viewModel.placeDefense(c, r) }
-                                    ) {
-                                        val defense = state.defenses.find { it.cell.col == c && it.cell.row == r }
-                                        if (defense != null) {
-                                            Box(
-                                                modifier = Modifier.fillMaxSize(),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(defense.type.icon, fontSize = 32.sp)
-                                                Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp).background(Color.Red)) {
-                                                    val hpPercent = defense.hp.toFloat() / defense.type.hp.toFloat()
-                                                    Box(modifier = Modifier.fillMaxWidth(hpPercent).fillMaxHeight().background(Color.Green))
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxSize()
+                            .padding(8.dp)
                     ) {
                         val rowHeight = maxHeight / rows
                         val colWidth = maxWidth / cols
 
+                        // Cuadrícula 6x3
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            for (r in 0 until rows) {
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth()
+                                ) {
+                                    for (c in 0 until cols) {
+                                        val existingDefense = state.defenses.find { it.cell.col == c && it.cell.row == r }
+                                        val isEven = (r + c) % 2 == 0
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .fillMaxHeight()
+                                                .padding(2.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(
+                                                    if (isEven) Color(0xFF065F46)
+                                                    else Color(0xFF047857).copy(alpha = 0.75f)
+                                                )
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = Color(0xFF10B981).copy(alpha = 0.28f),
+                                                    shape = RoundedCornerShape(10.dp)
+                                                )
+                                                .clickable { viewModel.placeDefense(c, r) },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            if (existingDefense != null) {
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.Center,
+                                                    modifier = Modifier.padding(2.dp)
+                                                ) {
+                                                    Text(existingDefense.type.icon, fontSize = 26.sp)
+                                                    Text(
+                                                        text = existingDefense.type.title,
+                                                        color = Color.White,
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        maxLines = 1
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    val hpRatio = (existingDefense.hp.toFloat() / existingDefense.type.hp.toFloat()).coerceIn(0f, 1f)
+                                                    LinearProgressIndicator(
+                                                        progress = { hpRatio },
+                                                        modifier = Modifier
+                                                            .fillMaxWidth(0.75f)
+                                                            .height(4.dp)
+                                                            .clip(RoundedCornerShape(2.dp)),
+                                                        color = Color(0xFF4ADE80),
+                                                        trackColor = Color(0xFFEF4444)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Escudos de última línea (Lawnmowers)
                         state.lawnmowers.forEach { lm ->
                             if (lm.active || lm.triggered) {
-                                val xPos = if (lm.triggered) lm.x else -0.8f
+                                val xPos = if (lm.triggered) lm.x else 0f
                                 Box(
                                     modifier = Modifier
                                         .offset(x = colWidth * xPos, y = rowHeight * lm.row)
-                                        .size(colWidth, rowHeight),
-                                    contentAlignment = Alignment.Center
+                                        .size(26.dp, rowHeight),
+                                    contentAlignment = Alignment.CenterStart
                                 ) {
-                                    Text("🚜", fontSize = 32.sp)
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFF0284C7),
+                                        border = BorderStroke(1.dp, Color.White),
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                Icons.Default.Shield,
+                                                contentDescription = "Escudo de fila",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
 
+                        // Distracciones avanzando
                         state.distractions.forEach { dist ->
                             Box(
                                 modifier = Modifier
-                                    .offset(x = colWidth * dist.x, y = rowHeight * dist.row)
-                                    .size(colWidth, rowHeight),
+                                    .offset(
+                                        x = colWidth * dist.x.coerceIn(0f, cols - 0.8f),
+                                        y = rowHeight * dist.row
+                                    )
+                                    .size(colWidth, rowHeight)
+                                    .padding(2.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(dist.type.icon, fontSize = 32.sp)
-                                Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.8f).height(4.dp).background(Color.Red)) {
-                                    val hpPercent = dist.hp.toFloat() / dist.type.maxHp.toFloat()
-                                    Box(modifier = Modifier.fillMaxWidth(hpPercent).fillMaxHeight().background(Color.Green))
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = Color(0xFF991B1B).copy(alpha = 0.92f),
+                                    border = BorderStroke(1.dp, Color(0xFFFCA5A5))
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 3.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(dist.type.icon, fontSize = 22.sp)
+                                        Text(
+                                            text = dist.type.title,
+                                            color = Color.White,
+                                            fontSize = 8.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            maxLines = 1
+                                        )
+                                        val hpPercent = (dist.hp.toFloat() / dist.type.maxHp.toFloat()).coerceIn(0f, 1f)
+                                        LinearProgressIndicator(
+                                            progress = { hpPercent },
+                                            modifier = Modifier
+                                                .fillMaxWidth(0.8f)
+                                                .height(3.dp)
+                                                .clip(RoundedCornerShape(2.dp)),
+                                            color = Color(0xFFFBBF24),
+                                            trackColor = Color(0xFF450A0A)
+                                        )
+                                    }
                                 }
                             }
                         }
 
+                        // Proyectiles de Argumentos
                         state.arguments.forEach { arg ->
                             Box(
                                 modifier = Modifier
-                                    .offset(x = colWidth * arg.x, y = rowHeight * arg.row + rowHeight / 3)
-                                    .size(16.dp)
+                                    .offset(
+                                        x = colWidth * arg.x,
+                                        y = rowHeight * arg.row + (rowHeight / 2) - 8.dp
+                                    )
+                                    .size(18.dp)
                                     .clip(CircleShape)
-                                    .background(Color.Blue)
+                                    .background(Color(0xFF38BDF8))
+                                    .border(1.5.dp, Color.White, CircleShape)
                             )
                         }
 
+                        // Gotas de Confianza (Tocar o esperar 3.5s para auto-recolección)
                         state.confidenceDrops.forEach { drop ->
                             Box(
                                 modifier = Modifier
-                                    .offset(x = colWidth * drop.x, y = rowHeight * drop.y.coerceAtLeast(0f))
-                                    .size(40.dp)
+                                    .offset(
+                                        x = colWidth * drop.x.coerceIn(0f, (cols - 1).toFloat()),
+                                        y = rowHeight * drop.y.coerceIn(0f, (rows - 1).toFloat())
+                                    )
+                                    .size(44.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFFFFF59D).copy(alpha = 0.8f))
+                                    .background(Color(0xFFFBBF24))
+                                    .border(2.dp, Color.White, CircleShape)
                                     .clickable { viewModel.collectConfidence(drop.id) },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("💡", fontSize = 24.sp)
+                                Text("💡", fontSize = 22.sp)
                             }
                         }
                     }
                 }
-                
-                if (draggedDefense != null) {
-                    Box(
-                        modifier = Modifier
-                            .offset { IntOffset(dragPosition.x.toInt(), dragPosition.y.toInt()) }
-                            .size(70.dp, 90.dp)
-                            .background(Color.White.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
-                            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
-                        contentAlignment = Alignment.Center
+            }
+
+            if (state.isLevelComplete || state.isGameOver) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.82f))
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                        border = BorderStroke(
+                            1.5.dp,
+                            if (state.isLevelComplete) Color(0xFF10B981) else Color(0xFFEF4444)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(draggedDefense!!.icon, fontSize = 32.sp)
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(if (state.isLevelComplete) "🛡️" else "⚠️", fontSize = 48.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (state.isLevelComplete) "¡Oleada ${state.wave} Superada!" else "¡El Pánico Rompió tu Concentración!",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Puntuación: ${state.score} pts",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFFFBBF24)
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Button(
+                                onClick = {
+                                    if (state.isLevelComplete) viewModel.nextLevel() else viewModel.startGame()
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (state.isLevelComplete) Color(0xFF10B981) else Color(0xFF38BDF8)
+                                ),
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth().height(52.dp)
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    if (state.isLevelComplete) "Siguiente Oleada (${state.wave + 1})" else "Reintentar Defensa",
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
-}
 }

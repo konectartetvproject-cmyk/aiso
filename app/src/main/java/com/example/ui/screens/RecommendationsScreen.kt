@@ -100,11 +100,12 @@ fun RecommendationsScreen(onBack: () -> Unit, showBackButton: Boolean = true) {
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
+                .padding(top = 6.dp)
         ) {
             if (showBackButton) {
                 IconButton(
                     onClick = onBack,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
@@ -115,24 +116,24 @@ fun RecommendationsScreen(onBack: () -> Unit, showBackButton: Boolean = true) {
             }
             
             androidx.compose.foundation.lazy.LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = if (showBackButton) 0.dp else 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(categories.size) { index ->
                     val category = categories[index]
                     Surface(
                         modifier = Modifier.clickable { selectedCategory = category },
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                        color = if (selectedCategory == category) Color.White.copy(alpha = 0.2f) else Color.Transparent,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedCategory == category) Color.White else Color.White.copy(alpha = 0.3f))
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                        color = if (selectedCategory == category) Color.White else Color.Black.copy(alpha = 0.35f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedCategory == category) Color.White else Color.White.copy(alpha = 0.35f))
                     ) {
                         Text(
                             text = category,
-                            color = if (selectedCategory == category) Color.White else Color.White.copy(alpha = 0.7f),
-                            fontWeight = if (selectedCategory == category) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            color = if (selectedCategory == category) Color.Black else Color.White,
+                            fontWeight = if (selectedCategory == category) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp)
                         )
                     }
                 }
@@ -150,52 +151,63 @@ fun RecommendationCard(recommendation: Recommendation) {
     ) {
         Column(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(32.dp)
-                .background(
-                    color = Color.Black.copy(alpha = 0.4f),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp)
-                )
-                .padding(horizontal = 24.dp, vertical = 40.dp),
-            verticalArrangement = Arrangement.Center,
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(top = 124.dp, bottom = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "💡",
-                fontSize = 60.sp,
-                modifier = Modifier.offset(y = 10.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = recommendation.title,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                lineHeight = 34.sp,
-                modifier = Modifier.graphicsLayer {
-                    shadowElevation = 8.dp.toPx()
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp, vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = Color.Black.copy(alpha = 0.45f),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
+                        )
+                        .padding(horizontal = 26.dp, vertical = 36.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "💡",
+                        fontSize = 52.sp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = recommendation.title,
+                        fontSize = 23.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 32.sp,
+                        modifier = Modifier.graphicsLayer {
+                            shadowElevation = 8.dp.toPx()
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(
+                        text = recommendation.text,
+                        fontSize = 17.sp,
+                        color = Color.White.copy(alpha = 0.92f),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 25.sp
+                    )
                 }
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = recommendation.text,
-                fontSize = 18.sp,
-                color = Color.White.copy(alpha = 0.9f),
-                textAlign = TextAlign.Center,
-                lineHeight = 26.sp
-            )
-        }
-        
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "Desliza para más",
-                color = Color.White.copy(alpha = 0.5f)
+                color = Color.White.copy(alpha = 0.65f),
+                fontSize = 12.sp
             )
         }
     }

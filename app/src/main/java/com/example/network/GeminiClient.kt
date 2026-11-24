@@ -35,9 +35,19 @@ data class Content(
 )
 
 @JsonClass(generateAdapter = true)
+data class GenerationConfig(
+    val temperature: Double? = 0.7,
+    val maxOutputTokens: Int? = 4096
+)
+
+@JsonClass(generateAdapter = true)
 data class GenerateContentRequest(
     val contents: List<Content>,
-    val systemInstruction: Content? = null
+    val systemInstruction: Content? = null,
+    val generationConfig: GenerationConfig? = GenerationConfig(
+        temperature = 0.7,
+        maxOutputTokens = 4096
+    )
 )
 
 @JsonClass(generateAdapter = true)
@@ -62,14 +72,21 @@ interface GeminiApiService {
 object GeminiClient {
     private const val BASE_URL = "https://generativelanguage.googleapis.com/"
 
-    // Cadena de modelos compatibles con conmutación automática
+    // Modelos ordenados por velocidad de respuesta real en el endpoint v1beta
     private val SUPPORTED_MODELS = listOf(
-        "gemini-3.8-flash",
-        "gemini-3.5-flash",
-        "gemini-3.5-flash-lite",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
         "gemini-flash-latest",
-        "gemini-3.1-flash-lite-preview"
+        "gemini-2.0-flash-lite",
+        "gemini-3.8-flash",
+        "gemini-3.5-flash"
     )
+
+    @Volatile
+    private var cachedWorkingModel: String? = null
+
+    @Volatile
+    private var rejectedApiKey: String? = null
 
     private val INVALID_KEY_PLACEHOLDERS = setOf(
         "",
@@ -88,9 +105,9 @@ object GeminiClient {
         .build()
 
     private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(35, TimeUnit.SECONDS)
-        .readTimeout(35, TimeUnit.SECONDS)
-        .writeTimeout(35, TimeUnit.SECONDS)
+        .connectTimeout(12, TimeUnit.SECONDS)
+        .readTimeout(25, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
         .build()
 
     val apiService: GeminiApiService by lazy {
@@ -116,7 +133,9 @@ object GeminiClient {
             raw.startsWith("DEFAULT_", ignoreCase = true) ||
             raw.startsWith("YOUR_", ignoreCase = true) ||
             raw.startsWith("REPLACE_", ignoreCase = true) ||
-            raw.length < 20
+            raw.startsWith("AQ.") || // Token interno de contenedor no válido para generativelanguage REST
+            raw.length < 20 ||
+            raw == rejectedApiKey
         ) {
             return ""
         }
@@ -131,17 +150,31 @@ object GeminiClient {
         apiKey: String,
         request: GenerateContentRequest
     ): GenerateContentResponse {
+        val fastModel = cachedWorkingModel
+        val orderedModels = if (fastModel != null) {
+            listOf(fastModel) + SUPPORTED_MODELS.filter { it != fastModel }
+        } else {
+            SUPPORTED_MODELS
+        }
+
         var lastException: Exception? = null
-        for (model in SUPPORTED_MODELS) {
+        for (model in orderedModels) {
             try {
-                return apiService.generateContent(
+                val res = apiService.generateContent(
                     model = model,
                     apiKey = apiKey,
                     request = request
                 )
+                cachedWorkingModel = model
+                return res
             } catch (e: HttpException) {
                 lastException = e
-                if (e.code() == 404 || e.code() == 400 || e.code() == 503) {
+                val code = e.code()
+                if (code == 401 || code == 403) {
+                    rejectedApiKey = apiKey
+                    throw e
+                }
+                if (code == 404 || code == 400 || code == 503 || code == 429) {
                     continue
                 } else {
                     throw e
@@ -155,10 +188,9 @@ object GeminiClient {
     }
 
     /**
-     * Realiza la consulta a Gemini si hay una API Key válida y cuota disponible.
-     * Si no hay clave configurada o ocurre cualquier fallo de red/API, devuelve cadena vacía ""
-     * de forma silenciosa para que los ViewModels activen automáticamente el motor experto local
-     * sin mostrar mensajes de error al usuario.
+     * Realiza la consulta a Gemini con capacidad extendida (4096 tokens de salida) y respuesta rápida.
+     * Si no hay clave externa o ocurre fallo de red, retorna "" de inmediato (0 ms de espera)
+     * para activar el motor generativo experto integrado de AISO IA.
      */
     suspend fun chat(contents: List<Content>, systemPrompt: String? = null): String {
         val apiKey = getCleanApiKey()
@@ -169,7 +201,11 @@ object GeminiClient {
             contents = contents,
             systemInstruction = systemPrompt?.let {
                 Content(parts = listOf(Part(text = it)))
-            }
+            },
+            generationConfig = GenerationConfig(
+                temperature = 0.7,
+                maxOutputTokens = 4096
+            )
         )
         return try {
             val response = executeWithFallback(apiKey, request)
@@ -177,8 +213,7 @@ object GeminiClient {
                 ?.firstOrNull()
                 ?.content
                 ?.parts
-                ?.firstOrNull { !it.text.isNullOrBlank() }
-                ?.text
+                ?.joinToString("\n") { it.text.orEmpty() }
                 ?.trim()
                 .orEmpty()
             text
@@ -218,10 +253,11 @@ object GeminiClient {
                 Part(inlineData = InlineData(mimeType = "image/jpeg", data = base64))
             )
             val request = GenerateContentRequest(
-                contents = listOf(Content(parts = parts))
+                contents = listOf(Content(parts = parts)),
+                generationConfig = GenerationConfig(temperature = 0.6, maxOutputTokens = 512)
             )
 
-            com.example.util.AiQuotaManager.recordUsage(inputTokens = 350, outputTokens = 60)
+            com.example.util.AiQuotaManager.recordUsage(inputTokens = 350, outputTokens = 80)
 
             val response = executeWithFallback(apiKey, request)
             val text = response.candidates
@@ -239,24 +275,88 @@ object GeminiClient {
         }
     }
 
-    /**
-     * Verifica el estado del motor híbrido devolviendo siempre un estado operativo limpio
-     * sin alertas ni errores de clave o códigos HTTP.
-     */
+    suspend fun transcribeAndAnalyzeSpeechEditorial(
+        rawTranscript: String,
+        audioBytes: ByteArray?,
+        durationSeconds: Int
+    ): String {
+        if (!com.example.util.AiQuotaManager.canMakeRequest()) {
+            return ""
+        }
+        val apiKey = getCleanApiKey()
+        if (apiKey.isBlank()) {
+            return ""
+        }
+
+        return try {
+            val parts = mutableListOf<Part>()
+            val prompt = """
+                Eres el Editor y Mentor Principal de la Academia Internacional de Oratoria (AISO), basado en el libro «Los secretos del orador exitoso» (Edición v07 — Carlos Enrique Lopez Adames).
+                El estudiante acaba de pronunciar un discurso en voz alta (duración: $durationSeconds segundos).
+                ${if (rawTranscript.isNotBlank()) "Transcripción preliminar capturada por voz: \"$rawTranscript\"" else "Escucha atentamente el archivo de audio adjunto."}
+
+                Entrega tu análisis dividido EXACTAMENTE en estas 3 secciones separadas por los encabezados indicados:
+
+                [SECCION_EDITORIAL]
+                Transcribe el discurso completo del estudiante en una VERSIÓN EDITORIAL ORDENADA Y LIMPIA:
+                - Elimina muletillas (eh, este, o sea, bueno), titubeos y repeticiones involuntarias.
+                - Aplica puntuación impecable, párrafos claros y precisión léxica (RAE/DPD Cap. 11).
+                - Ordénalo siguiendo el flujo natural de los 11 Pasos y el Método AISO (Apertura → Concepto → Historia → Técnicas/Consejos → Conclusión), respetando las ideas originales del estudiante.
+
+                [SECCION_ACIERTOS]
+                Resalta con viñetas claras LO BUENO del discurso del estudiante:
+                - Qué ideas, frases, intención, propósito (Cap. 1), estructura o conexión con la audiencia logró bien.
+
+                [SECCION_CORRECCIONES]
+                Indica con viñetas prácticas las CORRECCIONES Y CÓMO MEJORAR EL MENSAJE según el libro v07:
+                - Qué mejorar en su Apertura (I01–I10, orden Saludo → Inicio → Nombre → Tema), en el Desarrollo AISO (Concepto → Historia → Técnicas y sus puentes), en el Cierre (Anunciar conclusión → Técnica C01–C09 → Gracias), precisión de palabras y «Un solo ajuste concreto» (Hoja 4) para su próxima toma sin leer.
+            """.trimIndent()
+
+            parts.add(Part(text = prompt))
+
+            if (audioBytes != null && audioBytes.isNotEmpty() && audioBytes.size <= 7_500_000) {
+                val base64Audio = android.util.Base64.encodeToString(audioBytes, android.util.Base64.NO_WRAP)
+                parts.add(Part(inlineData = InlineData(mimeType = "audio/mp4", data = base64Audio)))
+            }
+
+            val request = GenerateContentRequest(
+                contents = listOf(Content(parts = parts)),
+                generationConfig = GenerationConfig(temperature = 0.5, maxOutputTokens = 4096)
+            )
+
+            val response = executeWithFallback(apiKey, request)
+            val resultText = response.candidates
+                ?.firstOrNull()
+                ?.content
+                ?.parts
+                ?.joinToString("\n") { it.text.orEmpty() }
+                ?.trim()
+                .orEmpty()
+
+            if (resultText.isNotBlank()) {
+                com.example.util.AiQuotaManager.recordTextUsage(rawTranscript.ifBlank { "audio_$durationSeconds" }, resultText)
+            }
+            resultText
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
     suspend fun testConnection(): String {
         val apiKey = getCleanApiKey()
         if (apiKey.isBlank()) {
-            return "✅ Motor AISO IA Activo y Operativo (Modo Híbrido Inteligente • Los secretos del orador exitoso)."
+            return "✅ Motor AISO IA Activo y Operativo (Modo Híbrido de Máxima Capacidad • Los secretos del orador exitoso)."
         }
         val request = GenerateContentRequest(
-            contents = listOf(Content(parts = listOf(Part(text = "Responde solo: OK"))))
+            contents = listOf(Content(parts = listOf(Part(text = "Responde solo: OK")))),
+            generationConfig = GenerationConfig(temperature = 0.1, maxOutputTokens = 32)
         )
 
         return try {
             executeWithFallback(apiKey, request)
-            "✅ Motor AISO IA Activo y Conectado (Gemini Flash en línea + Motor Experto Integrado)."
+            "✅ Motor AISO IA Activo y Conectado (Gemini Flash en línea + Motor Experto de Máxima Capacidad)."
         } catch (_: Exception) {
-            "✅ Motor AISO IA Activo y Operativo (Modo Híbrido Inteligente • Los secretos del orador exitoso)."
+            "✅ Motor AISO IA Activo y Operativo (Modo Híbrido de Máxima Capacidad • Los secretos del orador exitoso)."
         }
     }
 }

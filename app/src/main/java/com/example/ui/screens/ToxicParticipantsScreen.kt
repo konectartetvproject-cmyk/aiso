@@ -33,141 +33,123 @@ data class ToxicParticipant(
 
 val toxicParticipantsList = listOf(
     ToxicParticipant(
-        name = "El Sabelotodo",
-        description = "Cree que sabe más que el orador. Interrumpe para corregir o agregar información constantemente buscando demostrar su superioridad intelectual.",
-        action = "Reconocer su conocimiento y usarlo a favor (\"Como bien menciona...\"), pero mantener el control. No discutir. Como enseñamos en 'Invierte en ti', tu autoridad no se pierde por validar a otros, se fortalece. Nunca entres en una lucha de egos.",
+        name = "Caso 01 · Quien corrige o añade detalles constantemente",
+        description = "Interrumpe para matizar términos técnicos o agregar datos secundarios, desviando el ritmo de la explicación principal.",
+        action = "Aplicar el recurso A.V.R. (Agradecer, Valorar y Redirigir) y la secuencia Observa → Comprueba → Responde → Limita y continúa. Reconoce el matiz sin discutir por tener la razón (T51) y ofrece revisar detalles específicos al finalizar.",
         scenarios = listOf(
             ToxicQuizQuestion(
-                question = "Estás explicando un concepto y 'El Sabelotodo' te interrumpe diciendo: 'En realidad, según el último estudio de Harvard, eso es inexacto...'. ¿Qué haces?",
+                question = "Estás explicando un concepto y un participante te interrumpe diciendo: 'En realidad, ese indicador tiene tres excepciones técnicas adicionales...'. ¿Cómo aplicas A.V.R.?",
                 options = listOf(
-                    "Le dices que tu fuente es mejor y comienzas a debatir con él frente a todos.",
-                    "Le dices: 'Excelente aporte, el estudio de Harvard complementa muy bien lo que estamos viendo. Avanzando con el tema...'",
-                    "Te quedas callado, le das el marcador y le dices que si sabe tanto dé la clase él."
+                    "Debates con él frente a todos para demostrar que dominas las excepciones.",
+                    "Agradeces el matiz, valoras su precisión y rediriges: 'Gracias por señalar ese detalle técnico; para el propósito general de hoy nos enfocaremos en la base común y al cierre revisamos esas excepciones'.",
+                    "Le dices que si quiere puede pasar al frente a dar la sesión."
                 ),
                 correctAnswerIndex = 1
             ),
             ToxicQuizQuestion(
-                question = "Más tarde, vuelve a levantar la mano para corregir un término técnico sin mucha relevancia para el tema. ¿Cómo lo manejas ahora?",
+                question = "Minutos después vuelve a levantar la mano para agregar otro tecnicismo menor. ¿Qué haces según el Capítulo 15?",
                 options = listOf(
-                    "Le pides amablemente que anote sus precisiones para conversarlas al final, ya que hay mucho material por cubrir.",
-                    "Te disculpas profusamente por tu error y corriges todas tus diapositivas.",
-                    "Lo ignoras por completo y haces de cuenta que no levantó la mano."
+                    "Acuerdas con serenidad reunir las precisiones adicionales al final para cuidar el tiempo de todo el grupo.",
+                    "Ignoras su mano el resto de la presentación.",
+                    "Detienes el tema principal para discutir cada detalle."
                 ),
                 correctAnswerIndex = 0
             )
         )
     ),
     ToxicParticipant(
-        name = "El Charlatán",
-        description = "Habla con su vecino o interrumpe sin punto, desviando la atención del grupo. Suele estar distraído por su propia necesidad de hablar.",
-        action = "Hacer una pausa de silencio mirándolo fijamente, acercarse físicamente, o pedir que comparta su idea con todo el grupo. La Academia AISO recomienda el 'silencio táctico' como la herramienta más elegante para recuperar la atención.",
+        name = "Caso 02 y 04 · Quien encadena preguntas o prolonga su turno",
+        description = "Formula tres o cuatro preguntas seguidas sin dejar responder, o convierte su turno de pregunta en un relato extenso que ocupa el tiempo común.",
+        action = "Cuidar los turnos del grupo (Cap. 6 y 15): escuchar con atención, aprovechar la primera pausa respiratoria y pedir con amabilidad que elija la pregunta prioritaria en una sola oración.",
         scenarios = listOf(
             ToxicQuizQuestion(
-                question = "Mientras das una instrucción importante, él está contando una anécdota personal a su compañero de al lado, distrayendo a los demás. ¿Cuál es la primera acción a tomar?",
+                question = "Un asistente toma la palabra y lleva dos minutos contando su experiencia personal sin formular ninguna pregunta. ¿Cuál es la respuesta AISO?",
                 options = listOf(
-                    "Le gritas: '¡Silencio por favor, estoy hablando!'",
-                    "Haces una pausa total, te quedas en silencio y lo miras fijamente hasta que se dé cuenta (Silencio Táctico).",
-                    "Hablas mucho más fuerte para que tu voz tape la suya."
-                ),
-                correctAnswerIndex = 1
-            ),
-            ToxicQuizQuestion(
-                question = "El silencio táctico no funcionó del todo y sigue susurrando. ¿Cuál es tu siguiente movida?",
-                options = listOf(
-                    "Caminas lentamente hacia su lugar mientras sigues hablando, usando la proximidad física para que se calle.",
-                    "Le pides a seguridad que lo saque de la sala.",
-                    "Detienes la clase y le dices: 'O te callas o me voy'."
-                ),
-                correctAnswerIndex = 0
-            )
-        )
-    ),
-    ToxicParticipant(
-        name = "El Negativo / Cuestionador",
-        description = "Siempre encuentra un \"pero\" o cuestiona la viabilidad de lo que se enseña. Tiende a bajar la moral del grupo con su pesimismo.",
-        action = "Evitar ponerse a la defensiva. Pedirle que anote sus dudas para el final, o usar la técnica del rebote (preguntar al resto del grupo qué opina). Recuerda, el libro nos enseña a transformar la negatividad en debate constructivo.",
-        scenarios = listOf(
-            ToxicQuizQuestion(
-                question = "Presentas una nueva técnica de ventas y él dice en voz alta: 'Eso aquí nunca va a funcionar, los clientes son diferentes'. ¿Cuál es la mejor respuesta?",
-                options = listOf(
-                    "Le dices que tiene una actitud terrible y que así nunca tendrá éxito.",
-                    "Le das la razón para no pelear y pasas rápido a otro tema.",
-                    "Usas la técnica del rebote: 'Es una perspectiva interesante. ¿Qué opina el resto del grupo sobre este desafío?'"
-                ),
-                correctAnswerIndex = 2
-            ),
-            ToxicQuizQuestion(
-                question = "Sigue insistiendo en que todo lo que propones es imposible. ¿Qué haces?",
-                options = listOf(
-                    "Te frustras y le dices que si no le gusta, se puede ir.",
-                    "Validas su preocupación y le pides que, como ejercicio, intente pensar en un solo escenario donde sí podría funcionar.",
-                    "Lo ignoras completamente el resto de la sesión."
+                    "Cortarlo con brusquedad: 'Ya hablaste demasiado, siguiente turno'.",
+                    "Intervenir cuando tome aire: 'Gracias por compartir ese contexto. Para que podamos responder con claridad y escuchar a más personas, ¿cuál sería tu pregunta principal en una frase?'",
+                    "Mirar el reloj con gesto de impaciencia sin decir nada."
                 ),
                 correctAnswerIndex = 1
             )
         )
     ),
     ToxicParticipant(
-        name = "El Distraído / Silencioso",
-        description = "No participa, está en el celular o parece aburrido. Su falta de energía puede contagiar a los demás.",
-        action = "Hacer preguntas directas pero fáciles, incluir dinámicas grupales, o moverse por el salón para mantener su atención. Invertir en tu lenguaje corporal te ayudará a reconectarlo sin exhibirlo.",
+        name = "Caso 03 y 08 · Comentarios hirientes o tono elevado",
+        description = "Lanza un comentario sarcástico, ataque indirecto o eleva el volumen buscando provocar una reacción defensiva.",
+        action = "Activar el Escudo de la Serenidad y el Termostato Emocional (IE05–06): hacer una Pausa Estratégica (IE01), no tomar la crítica como ataque personal (T46), bajar la intensidad (T49), reformular hacia hechos verificables (T59) y establecer límites claros si hay falta de respeto (T55).",
         scenarios = listOf(
             ToxicQuizQuestion(
-                question = "Estás en la mitad de tu charla y ves a alguien en la última fila bostezando y scrolleando en redes sociales. ¿Qué haces?",
+                question = "Alguien dice con sarcasmo: 'Lo que propones suena muy bonito en teoría, pero se nota que no conoces el trabajo real'. ¿Cómo respondes?",
                 options = listOf(
-                    "Detienes la presentación y le dices: 'Oye tú, el del celular, ¿te aburro?'",
-                    "Lanzas una pregunta abierta y caminas sutilmente hacia su lado de la sala para que tu cercanía lo reconecte.",
-                    "Le haces una pregunta extremadamente difícil para que pase vergüenza por no prestar atención."
+                    "Confrontas su comentario enumerando todos tus títulos y años de experiencia.",
+                    "Haces una pausa de 2 segundos, mantienes el tono sereno y reformulas hacia el hecho: 'Entiendo que te preocupa cómo aplicarlo bajo la carga diaria de trabajo. Veamos un caso concreto de implementación paso a paso'.",
+                    "Le ordenas que se calme inmediatamente."
                 ),
                 correctAnswerIndex = 1
             )
         )
     ),
     ToxicParticipant(
-        name = "El Monopolizador",
-        description = "Quiere responder a todas las preguntas y acapara el tiempo de participación, no dejando espacio para los demás.",
-        action = "Agradecer su entusiasmo, pero limitar su tiempo. La Academia AISO enfatiza que el orador es el 'director de orquesta' y debe dar espacio a que todos los instrumentos suenen.",
+        name = "Caso 05 · Quien repite «aquí eso nunca funciona»",
+        description = "Reitera objeciones cerradas basadas en intentos pasados y frena el avance hacia las soluciones prácticas.",
+        action = "Validar la preocupación antes de responder (T43), convertir la objeción en información útil (T44) y abrir al grupo preguntando qué condición concreta sí permitiría dar un primer paso realizable.",
         scenarios = listOf(
             ToxicQuizQuestion(
-                question = "Haces una pregunta abierta al grupo y él levanta la mano por quinta vez consecutiva para contar una historia muy larga. ¿Cómo lo manejas?",
+                question = "Propones una mejora en la comunicación del equipo y alguien afirma: 'Eso ya se intentó hace años y nunca funcionó'. ¿Cuál es tu mejor decisión?",
                 options = listOf(
-                    "Le dices: 'Gracias por tu gran aporte de hoy, pero me encantaría escuchar la opinión de alguien que no haya participado aún'.",
-                    "Le das la palabra porque es el único que participa voluntariamente.",
-                    "Le dices: 'Ya hablaste mucho, deja hablar a los demás'."
-                ),
-                correctAnswerIndex = 0
-            )
-        )
-    ),
-    ToxicParticipant(
-        name = "El Agresivo / Confrontacional",
-        description = "Ataca directamente al orador o a sus ideas con tono hostil. Su objetivo es desestabilizarte emocionalmente.",
-        action = "Mantener la calma absoluta. No devolver la agresión. Escuchar activamente, validar su frustración y proponer hablarlo en privado durante el receso. Nunca pierdas el control de tus emociones.",
-        scenarios = listOf(
-            ToxicQuizQuestion(
-                question = "Se levanta enojado y te dice: 'Lo que estás enseñando es una estafa y una pérdida de mi tiempo'. ¿Qué acción tomas?",
-                options = listOf(
-                    "Le respondes agresivamente para defender tu honor y demostrar autoridad.",
-                    "Mantienes un tono calmado: 'Entiendo que sientas frustración. Este es un tema complejo. Te propongo que lo hablemos a detalle tú y yo en el receso'.",
-                    "Lo mandas a callar inmediatamente y llamas a seguridad."
+                    "Decirle que tiene una mentalidad negativa.",
+                    "Validar y redirigir: 'Gracias por mencionarlo; conocer qué dificultó aquel intento es muy útil. ¿Qué ajuste concreto creen ustedes que haría viable probar hoy una versión más sencilla?'",
+                    "Cambiar de tema sin responder."
                 ),
                 correctAnswerIndex = 1
             )
         )
     ),
     ToxicParticipant(
-        name = "El Bromista",
-        description = "Hace chistes de todo, interrumpiendo el flujo y restando seriedad al tema. Busca constantemente la validación y risa del grupo.",
-        action = "Sonreír ante la primera broma, pero si continúa, redirigir la atención rápidamente al tema central. Si persiste, usa su nombre con tono firme y amable para pedirle enfoque. El humor es bueno, pero tú marcas el ritmo.",
+        name = "Caso 06 y 10 · Conversaciones paralelas o interrupciones virtuales",
+        description = "Dos o más personas conversan entre sí impidiendo escuchar, o alguien abre el micrófono repetidamente en una sesión virtual sin respetar turnos.",
+        action = "En presencial: pausa breve, cercanía serena sin exhibir a nadie o recuperar la atención con una tarea pertinente. En virtual (Caso 10): recordar con cortesía el acuerdo de participación (levantar la mano o escribir en el chat).",
         scenarios = listOf(
             ToxicQuizQuestion(
-                question = "En un momento reflexivo y emotivo de la charla, él hace un chiste de doble sentido buscando hacer reír a todos rompiendo el clima. El grupo se ríe. ¿Cómo procedes?",
+                question = "Mientras explicas el concepto central, dos personas conversan en voz baja distrayendo a su fila. ¿Qué recomiendan los Capítulos 13 y 15?",
                 options = listOf(
-                    "Te enojas y le dices frente a todos que es un inmaduro.",
-                    "Le sigues el juego y empiezas a contar chistes también para caerle bien al grupo.",
-                    "Sonríes levemente, pero cambias inmediatamente tu tono a uno serio y dices: 'Volviendo al punto importante...' y continúas."
+                    "Gritar desde el escenario para imponer silencio.",
+                    "Hacer una pausa breve (silencio estratégico T35) o desplazarte con serenidad hacia ese sector mientras continúas explicando para recuperar la atención sin humillar a nadie.",
+                    "Señalarlos con el dedo frente a toda la sala."
                 ),
-                correctAnswerIndex = 2
+                correctAnswerIndex = 1
+            )
+        )
+    ),
+    ToxicParticipant(
+        name = "Caso 07 y 09 · Ridiculizar a otro o afirmar datos no verificados",
+        description = "Alguien se burla de la pregunta de un compañero (Caso 07) o presenta como hecho absoluto un rumor o cifra sin fuente comprobada (Caso 09).",
+        action = "En el Caso 07: poner un límite inmediato y sereno para proteger el respeto del grupo (T54, T55). En el Caso 09: aplicar el Árbol de decisión (Ruta B) distinguiendo con cortesía entre un dato verificado con fuente y una suposición pendiente de confirmar.",
+        scenarios = listOf(
+            ToxicQuizQuestion(
+                question = "Un participante hace una pregunta básica y otro se ríe diciendo que eso es obvio (Caso 07). ¿Qué debe hacer el orador AISO?",
+                options = listOf(
+                    "Dejar pasar la burla para evitar momentos incómodos.",
+                    "Intervenir de inmediato con serenidad y firmeza: 'En este espacio todas las preguntas son valiosas y nos tratamos con respeto. Gracias por plantear la duda, vamos a responderla con claridad'.",
+                    "Reírse también para caer bien."
+                ),
+                correctAnswerIndex = 1
+            )
+        )
+    ),
+    ToxicParticipant(
+        name = "Caso 11 y 12 · Discrepancia firme y respetuosa o silencio al participar",
+        description = "El Caso 11 es alguien que expresa un desacuerdo con argumentos y respeto (¡no es conducta tóxica!). El Caso 12 es quien permanece callado o necesita otro modo de participar.",
+        action = "En el Caso 11: escuchar con apertura (IT03), responder con razones verificables sin confrontación personal (T45). En el Caso 12: nunca forzar ni exponer a quien guarda silencio; ofrecer reflexión en parejas o participación voluntaria (C01).",
+        scenarios = listOf(
+            ToxicQuizQuestion(
+                question = "Una persona levanta la mano y presenta con respeto un argumento sólido que difiere de tu propuesta (Caso 11). ¿Cómo actúas?",
+                options = listOf(
+                    "Lo tratas como un participante hostil y cortas su intervención.",
+                    "Escuchas su argumento completo, reconoces el punto válido que aporta y explicas con datos verificables tu postura sin convertir el desacuerdo en disputa personal.",
+                    "Cedes por completo aunque tus datos digan lo contrario."
+                ),
+                correctAnswerIndex = 1
             )
         )
     )

@@ -1,28 +1,34 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 
 data class OpeningClosingQuestion(
     val title: String,
     val example: String,
     val icon: ImageVector,
-    val type: String,
+    val type: String, // "Inicio" o "Conclusión"
     val specificTechnique: String,
     val options: List<String>,
     val explanation: String
@@ -30,310 +36,461 @@ data class OpeningClosingQuestion(
 
 val openingClosingQuestions = listOf(
     OpeningClosingQuestion(
-        title = "El Dato Sorprendente",
-        example = "¿Sabías que pasamos más de 5 años de nuestras vidas en redes sociales?",
+        title = "Impacto Cuantitativo",
+        example = "¿Sabías que el 75% de los profesionales brillantes pierden ascensos por miedo a tomar el micrófono?",
         icon = Icons.Default.DataExploration,
         type = "Inicio",
         specificTechnique = "Dato Estadístico",
-        options = listOf("Dato Estadístico", "Llamado a la acción", "Resumen", "Anécdota"),
-        explanation = "Un dato estadístico sorprendente capta la atención del público inmediatamente desde el principio."
+        options = listOf("Dato Estadístico", "Llamado a la Acción", "Resumen Tricolon", "Anécdota Personal"),
+        explanation = "Un dato estadístico impactante rompe la inercia mental del público en los primeros 10 segundos."
     ),
     OpeningClosingQuestion(
-        title = "El Llamado a la Acción",
-        example = "No esperen a mañana. Empiecen hoy a cambiar su comunidad.",
+        title = "Movilización Inmediata",
+        example = "No esperen al próximo lunes. Hoy mismo, en su próxima reunión, pónganse de pie y compartan su idea.",
         icon = Icons.Default.Campaign,
         type = "Conclusión",
         specificTechnique = "Llamado a la Acción",
-        options = listOf("Pregunta Retórica", "Llamado a la Acción", "Cita Célebre", "Anécdota"),
-        explanation = "El llamado a la acción es ideal para cerrar, motivando a la audiencia a actuar tras escuchar tu mensaje."
+        options = listOf("Pregunta Retórica", "Llamado a la Acción", "Cita Célebre", "Objeto en Mano"),
+        explanation = "El Llamado a la Acción cierra el discurso indicando un paso concreto e inmediato que la audiencia puede ejecutar."
     ),
     OpeningClosingQuestion(
-        title = "La Historia Personal",
-        example = "Hace diez años, estaba sentado exactamente donde están ustedes ahora, lleno de dudas...",
+        title = "Vulnerabilidad y Conexión",
+        example = "Hace ocho años, mis manos temblaban tanto frente a 20 personas que se me cayó el micrófono al piso...",
         icon = Icons.Default.MenuBook,
         type = "Inicio",
-        specificTechnique = "Anécdota",
-        options = listOf("Círculo Completo", "Anécdota", "Resumen", "Llamado a la Acción"),
-        explanation = "Comenzar con una anécdota personal genera empatía y conexión con la audiencia desde el primer segundo."
+        specificTechnique = "Anécdota Personal",
+        options = listOf("Círculo Completo", "Anécdota Personal", "Resumen Tricolon", "Llamado a la Acción"),
+        explanation = "Iniciar con una historia vivencial activa la empatía y la escucha emocional del auditorio."
     ),
     OpeningClosingQuestion(
-        title = "El Círculo Completo",
-        example = "Y así, volviendo al niño del que les hablé al principio, hoy por fin encontró su camino.",
+        title = "Simetría Narrativa",
+        example = "Y aquel joven al que se le cayó el micrófono hace ocho años hoy les dice: el miedo se vence hablando.",
         icon = Icons.Default.AllInclusive,
         type = "Conclusión",
         specificTechnique = "Círculo Completo",
-        options = listOf("Anécdota", "Dato Estadístico", "Círculo Completo", "Pregunta Retórica"),
-        explanation = "Terminar haciendo referencia a la historia de inicio da una sensación de cierre perfecto y satisfacción."
+        options = listOf("Anécdota Personal", "Dato Estadístico", "Círculo Completo", "Pregunta Retórica"),
+        explanation = "El Círculo Completo retoma la historia del inicio al final para dar una sensación de perfección estructural."
     ),
     OpeningClosingQuestion(
-        title = "La Inspiración Final",
-        example = "Como dijo Gandhi: 'Sé el cambio que quieres ver en el mundo'. Gracias.",
+        title = "Autoridad Inmortal",
+        example = "Como escribió Maya Angelou: «La gente olvidará lo que dijiste, pero nunca cómo la hiciste sentir». Muchas gracias.",
         icon = Icons.Default.FormatQuote,
         type = "Conclusión",
         specificTechnique = "Cita Célebre",
-        options = listOf("Llamado a la Acción", "Resumen", "Dato Estadístico", "Cita Célebre"),
-        explanation = "Cerrar con una cita célebre deja a la audiencia con una frase memorable y poderosa resonando en su mente."
+        options = listOf("Llamado a la Acción", "Resumen Tricolon", "Dato Estadístico", "Cita Célebre"),
+        explanation = "Cerrar con una frase célebre condensa la filosofía de tu mensaje en una sentencia memorable."
     ),
     OpeningClosingQuestion(
-        title = "La Pregunta Reflexiva",
-        example = "Imaginen por un momento: ¿Cómo sería su vida si no tuvieran miedo a fracasar?",
+        title = "Activación Mental",
+        example = "Imaginen por un instante: ¿Qué pasaría con sus ingresos si duplicaran su capacidad de persuadir?",
         icon = Icons.Default.PsychologyAlt,
         type = "Inicio",
         specificTechnique = "Pregunta Retórica",
-        options = listOf("Resumen", "Cita Célebre", "Pregunta Retórica", "Círculo Completo"),
-        explanation = "Hacer una pregunta a la audiencia al inicio los obliga a pensar e involucrarse mentalmente con tu tema."
+        options = listOf("Resumen Tricolon", "Cita Célebre", "Pregunta Retórica", "Círculo Completo"),
+        explanation = "La Interrogación Retórica e Imaginación de Escenarios obliga al cerebro del oyente a involucrarse."
     ),
     OpeningClosingQuestion(
-        title = "El Resumen Poderoso",
-        example = "En conclusión, hemos visto que la disciplina, la pasión y la resiliencia son la clave.",
+        title = "Anclaje Visual",
+        example = "(Levantando una llave antigua en silencio) Esta pequeña llave abrió la primera oficina de nuestra empresa...",
+        icon = Icons.Default.Key,
+        type = "Inicio",
+        specificTechnique = "Objeto en Mano",
+        options = listOf("Objeto en Mano", "Resumen Tricolon", "Llamado a la Acción", "Círculo Completo"),
+        explanation = "Mostrar un objeto físico al iniciar concentra todas las miradas y despierta curiosidad instantánea."
+    ),
+    OpeningClosingQuestion(
+        title = "Síntesis en 3 Pilares",
+        example = "En conclusión, llévense estas tres llaves hoy: respiren con calma, hablen sin leer y conecten con el corazón.",
         icon = Icons.Default.Summarize,
         type = "Conclusión",
-        specificTechnique = "Resumen",
-        options = listOf("Resumen", "Dato Estadístico", "Anécdota", "Pregunta Retórica"),
-        explanation = "El resumen refuerza los puntos clave para que la audiencia no los olvide al irse."
+        specificTechnique = "Resumen Tricolon",
+        options = listOf("Resumen Tricolon", "Dato Estadístico", "Objeto en Mano", "Pregunta Retórica"),
+        explanation = "El Resumen en 3 puntos (Tricolon) fija la estructura 10-80-10 en la memoria de largo plazo."
     )
-).shuffled()
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpeningClosingGameScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
     var currentIndex by remember { mutableIntStateOf(0) }
     var score by remember { mutableIntStateOf(0) }
-    var gameState by remember { mutableStateOf("intro") }
-    var currentPhase by remember { mutableIntStateOf(1) }
-    var showFeedback by remember { mutableStateOf(false) }
-    var feedbackMessage by remember { mutableStateOf("") }
-    var feedbackColor by remember { mutableStateOf(Color.Green) }
+    var streak by remember { mutableIntStateOf(0) }
+    var currentPhase by remember { mutableIntStateOf(1) } // 1 = Inicio vs Conclusión, 2 = Técnica específica
+    var selectedAnswer by remember { mutableStateOf<String?>(null) }
+    var isAnswerCorrect by remember { mutableStateOf(false) }
+    var feedbackText by remember { mutableStateOf("") }
+    var isGameFinished by remember { mutableStateOf(false) }
 
     val currentQuestion = openingClosingQuestions.getOrNull(currentIndex)
 
-    if (gameState == "intro") {
-        AlertDialog(
-            onDismissRequest = { gameState = "phase1" },
-            title = { Text("El Arte del Inicio y el Cierre", fontWeight = FontWeight.Bold) },
-            text = { 
-                Text("Los primeros y últimos minutos de un discurso son vitales.\n\n" +
-                     "Fase 1: Clasifica si el ejemplo es ideal para un 'Inicio' o una 'Conclusión'.\n" +
-                     "Fase 2: Identifica la técnica específica.") 
-            },
-            confirmButton = {
-                Button(onClick = { gameState = "phase1" }) {
-                    Text("Comenzar")
-                }
+    fun advanceStep() {
+        selectedAnswer = null
+        if (currentPhase == 1) {
+            currentPhase = 2
+        } else {
+            currentPhase = 1
+            if (currentIndex < openingClosingQuestions.size - 1) {
+                currentIndex++
+            } else {
+                isGameFinished = true
             }
-        )
-    }
-
-    if (gameState == "won") {
-        AlertDialog(
-            onDismissRequest = onBack,
-            title = { Text("¡Juego Completado!", fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50)) },
-            text = { Text("Has dominado las técnicas de inicio y conclusión. Puntuación final: $score") },
-            confirmButton = {
-                Button(onClick = onBack) {
-                    Text("Volver")
-                }
-            }
-        )
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Inicios y Cierres", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("Inicios y Cierres de Impacto", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                        Text(
+                            "Regla 10-80-10 • Paso $currentPhase de 2",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.78f)
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF0F172A),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
                 )
             )
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A))
+                    )
+                )
         ) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Text(
-                    text = "Puntos: $score",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            if (gameState == "phase1" || gameState == "phase2") {
-                Text(
-                    text = "Fase $currentPhase - Pregunta ${currentIndex + 1} de ${openingClosingQuestions.size}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                if (currentQuestion != null) {
+            if (!isGameFinished && currentQuestion != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // HUD Superior
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            color = Color(0xFF1E293B),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFF334155))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text("🏆 Puntos: $score", fontWeight = FontWeight.ExtraBold, color = Color.White)
+                                if (streak > 1) {
+                                    Text("🔥 x$streak", fontWeight = FontWeight.Black, color = Color(0xFFFBBF24))
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = "Caso ${currentIndex + 1} de ${openingClosingQuestions.size}",
+                            color = Color(0xFF94A3B8),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    val progress = (currentIndex * 2 + currentPhase).toFloat() / (openingClosingQuestions.size * 2).toFloat()
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = Color(0xFF3B82F6),
+                        trackColor = Color(0xFF1E293B)
+                    )
+
+                    // Tarjeta del Ejemplo de Discurso
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                        border = BorderStroke(1.5.dp, Color(0xFF3B82F6))
                     ) {
                         Column(
                             modifier = Modifier
-                                .padding(24.dp)
+                                .padding(20.dp)
                                 .fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(100.dp)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+                                    .size(68.dp)
+                                    .background(Color(0xFF3B82F6).copy(alpha = 0.18f), RoundedCornerShape(16.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = currentQuestion.icon,
                                     contentDescription = null,
-                                    modifier = Modifier.size(60.dp),
-                                    tint = MaterialTheme.colorScheme.primary
+                                    modifier = Modifier.size(38.dp),
+                                    tint = Color(0xFF60A5FA)
                                 )
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             Text(
                                 text = currentQuestion.title,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center
+                                color = Color(0xFF93C5FD),
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "\"${currentQuestion.example}\"",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                text = "«${currentQuestion.example}»",
+                                color = Color.White,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
+                                lineHeight = 24.sp
                             )
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
-                    if (showFeedback) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = feedbackColor.copy(alpha = 0.2f)),
-                            modifier = Modifier.fillMaxWidth()
+
+                    if (currentPhase == 1) {
+                        Text(
+                            text = "PASO 1: ¿En qué momento del discurso usarías esta frase?",
+                            color = Color(0xFFCBD5E1),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text(
-                                text = feedbackMessage,
-                                color = feedbackColor,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(16.dp).fillMaxWidth()
-                            )
-                        }
-                    } else {
-                        if (currentPhase == 1) {
-                            Text(
-                                text = "¿Para qué momento es ideal esta frase?",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
+                            listOf("Inicio", "Conclusión").forEach { choice ->
+                                val isAnswered = selectedAnswer != null
+                                val isCorrectChoice = choice == currentQuestion.type
+                                val isSelectedChoice = selectedAnswer == choice
+
                                 Button(
-                                    onClick = { 
-                                        if (currentQuestion.type == "Inicio") {
-                                            score += 10
-                                            feedbackMessage = "¡Correcto! Es un Inicio excelente."
-                                            feedbackColor = Color(0xFF4CAF50)
-                                        } else {
-                                            feedbackMessage = "Incorrecto. Debería ser un Cierre."
-                                            feedbackColor = Color.Red
+                                    onClick = {
+                                        if (!isAnswered) {
+                                            selectedAnswer = choice
+                                            if (isCorrectChoice) {
+                                                isAnswerCorrect = true
+                                                streak++
+                                                score += 10 + (streak * 2)
+                                                feedbackText = "✅ ¡Correcto! Es un ${currentQuestion.type} de alto impacto. Ahora identifica cuál técnica exacta utiliza."
+                                            } else {
+                                                isAnswerCorrect = false
+                                                streak = 0
+                                                feedbackText = "❌ En realidad corresponde a: ${currentQuestion.type}. Pasemos a identificar la técnica."
+                                            }
                                         }
-                                        showFeedback = true
                                     },
-                                    modifier = Modifier.weight(1f).height(60.dp)
-                                ) {
-                                    Text("Inicio", fontSize = 18.sp)
-                                }
-                                Button(
-                                    onClick = { 
-                                        if (currentQuestion.type == "Conclusión") {
-                                            score += 10
-                                            feedbackMessage = "¡Correcto! Es un Cierre poderoso."
-                                            feedbackColor = Color(0xFF4CAF50)
-                                        } else {
-                                            feedbackMessage = "Incorrecto. Debería ser un Inicio."
-                                            feedbackColor = Color.Red
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = when {
+                                            !isAnswered -> Color(0xFF2563EB)
+                                            isCorrectChoice -> Color(0xFF059669)
+                                            isSelectedChoice -> Color(0xFFDC2626)
+                                            else -> Color(0xFF1E293B)
                                         }
-                                        showFeedback = true
-                                    },
-                                    modifier = Modifier.weight(1f).height(60.dp)
+                                    ),
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(60.dp)
                                 ) {
-                                    Text("Conclusión", fontSize = 18.sp)
+                                    Text(
+                                        text = if (choice == "Inicio") "🚀 Inicio" else "🏁 Conclusión",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
                                 }
                             }
-                        } else {
-                            Text(
-                                text = "¿Qué técnica específica se está usando?",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                currentQuestion.options.forEach { option ->
-                                    Button(
-                                        onClick = {
-                                            if (option == currentQuestion.specificTechnique) {
-                                                score += 15
-                                                feedbackMessage = "¡Correcto! ${currentQuestion.explanation}"
-                                                feedbackColor = Color(0xFF4CAF50)
+                        }
+                    } else {
+                        Text(
+                            text = "PASO 2: ¿Qué técnica específica del libro AISO está aplicando?",
+                            color = Color(0xFFCBD5E1),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            currentQuestion.options.forEach { option ->
+                                val isAnswered = selectedAnswer != null
+                                val isCorrectOption = option == currentQuestion.specificTechnique
+                                val isSelectedOption = selectedAnswer == option
+
+                                Surface(
+                                    onClick = {
+                                        if (!isAnswered) {
+                                            selectedAnswer = option
+                                            if (isCorrectOption) {
+                                                isAnswerCorrect = true
+                                                streak++
+                                                score += 15 + (streak * 3)
+                                                feedbackText = "✅ ¡Exacto! ${currentQuestion.explanation}"
                                             } else {
-                                                feedbackMessage = "Incorrecto. Era ${currentQuestion.specificTechnique}. ${currentQuestion.explanation}"
-                                                feedbackColor = Color.Red
+                                                isAnswerCorrect = false
+                                                streak = 0
+                                                feedbackText = "❌ Era «${currentQuestion.specificTechnique}». ${currentQuestion.explanation}"
                                             }
-                                            showFeedback = true
-                                        },
-                                        modifier = Modifier.fillMaxWidth().height(56.dp)
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = when {
+                                        !isAnswered -> Color(0xFF1E293B)
+                                        isCorrectOption -> Color(0xFF064E3B)
+                                        isSelectedOption -> Color(0xFF7F1D1D)
+                                        else -> Color(0xFF0F172A)
+                                    },
+                                    border = BorderStroke(
+                                        1.5.dp,
+                                        when {
+                                            !isAnswered -> Color(0xFF334155)
+                                            isCorrectOption -> Color(0xFF10B981)
+                                            isSelectedOption -> Color(0xFFF87171)
+                                            else -> Color(0xFF1E293B)
+                                        }
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(54.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(horizontal = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text(option, fontSize = 16.sp, textAlign = TextAlign.Center)
+                                        Text(option, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                        if (isAnswered) {
+                                            if (isCorrectOption) {
+                                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF34D399))
+                                            } else if (isSelectedOption) {
+                                                Icon(Icons.Default.Cancel, contentDescription = null, tint = Color(0xFFF87171))
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    
-                    LaunchedEffect(showFeedback) {
-                        if (showFeedback) {
-                            delay(3500)
-                            showFeedback = false
-                            if (currentPhase == 1) {
-                                currentPhase = 2
-                            } else {
-                                currentPhase = 1
-                                if (currentIndex < openingClosingQuestions.size - 1) {
-                                    currentIndex++
-                                } else {
-                                    gameState = "won"
+
+                    // Tarjeta de Retroalimentación + Botón Inmediato
+                    if (selectedAnswer != null) {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isAnswerCorrect) Color(0xFF064E3B) else Color(0xFF450A0A)
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isAnswerCorrect) Color(0xFF10B981) else Color(0xFFF87171)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = feedbackText,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    lineHeight = 19.sp
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Button(
+                                    onClick = { advanceStep() },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isAnswerCorrect) Color(0xFF10B981) else Color(0xFF3B82F6)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                                ) {
+                                    Text(
+                                        if (currentPhase == 1) "Ir al Paso 2: Identificar Técnica" else "Siguiente Caso",
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
                                 }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Pantalla Final
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                        border = BorderStroke(1.5.dp, Color(0xFF10B981)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("🏁", fontSize = 48.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "¡Dominio de Aperturas y Cierres!",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Puntuación Total: $score pts",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFFFBBF24)
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Button(
+                                onClick = {
+                                    currentIndex = 0
+                                    score = 0
+                                    streak = 0
+                                    currentPhase = 1
+                                    selectedAnswer = null
+                                    isGameFinished = false
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth().height(52.dp)
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Practicar de Nuevo", fontWeight = FontWeight.ExtraBold)
                             }
                         }
                     }

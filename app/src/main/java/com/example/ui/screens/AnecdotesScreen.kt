@@ -28,16 +28,32 @@ data class Anecdote(
 
 val anecdotesList = listOf(
     Anecdote(
-        title = "Bolívar en Casacoima",
-        text = "En 1817, acorralado y enfermo en la laguna de Casacoima, rodeado de enemigos, Simón Bolívar se encontraba en su peor momento. En lugar de rendirse, dio un discurso apasionado y visionario a sus oficiales. Describió cómo tomarían Angostura, liberarían la Nueva Granada, luego Venezuela y fundarían una gran nación. Sus oficiales creyeron que había enloquecido, pero sus palabras crearon la realidad. Esa es la fuerza de la oratoria: inspirar y crear visiones donde solo hay desesperanza."
+        title = "Isaac Newton y el valor de observar (Cap. 2)",
+        text = "En 1752, William Stukeley dejó escrito su recuerdo de una tarde de 1726 en la que conversó con Isaac Newton bajo unos manzanos. Newton le contó que en 1666, al ver caer una manzana en su jardín, se preguntó por qué caía siempre perpendicularmente hacia el centro de la Tierra. No existe evidencia histórica de que la fruta le golpeara la cabeza, pero esa observación atenta abrió una pregunta que transformó la ciencia. En el Método AISO, este relato nos enseña a observar con atención y a contar historias con rigor y honestidad."
     ),
     Anecdote(
-        title = "La Historia de Juan",
-        text = "Juan era un profesional brillante, pero el miedo a hablar en público lo paralizaba; su voz temblaba y olvidaba el mensaje. Al aplicar las técnicas de 'Invierte en ti', descubrió que su error era enfocarse en sí mismo y en el temor a ser juzgado. Cuando cambió su enfoque hacia el mensaje y en cómo ayudar a la audiencia, el miedo se transformó en energía. Hoy, Juan lidera con una comunicación segura."
+        title = "El hombre y el capullo de la mariposa (Cap. 4 · I03)",
+        text = "Un hombre observaba durante horas cómo una mariposa luchaba por salir a través de una pequeña abertura en su capullo. Creyendo ayudarla, tomó unas tijeras y cortó el resto del capullo. La mariposa salió de inmediato, pero su cuerpo estaba débil y sus alas encogidas; nunca pudo volar. El esfuerzo por atravesar la abertura era precisamente el proceso que fortalecía sus alas. En la oratoria ocurre lo mismo: ningún atajo sustituye la fuerza que ganas en cada ensayo con tus propias palabras."
     ),
     Anecdote(
-        title = "La Historia de Laura",
-        text = "Laura tenía un emprendimiento fantástico, pero no lograba cerrar ventas porque sus presentaciones eran técnicas y monótonas. Al entrar a la Academia AISO, aprendió el poder del Storytelling. Dejó de vender características y empezó a contar la historia de su producto y cómo transformaba la vida de sus clientes. Al conectar emocionalmente, sus ventas se multiplicaron, demostrando que la emoción vende más que la lógica."
+        title = "El samurái y el maestro zen (Cap. 4 · I03)",
+        text = "Un guerrero impetuoso acudió a un maestro zen y le exigió con tono desafiante que le explicara qué eran el cielo y el infierno. Cuando el maestro señaló su falta de serenidad, el samurái montó en cólera y desenvainó su espada. El maestro le dijo con calma: «Ahí se abren las puertas del infierno». Al comprender que su propia ira lo dominaba, el guerrero envainó la espada e hizo una reverencia. Entonces el maestro concluyó: «Y ahí se abren las puertas del cielo». En el escenario, la pausa estratégica marca la diferencia entre reaccionar y liderar."
+    ),
+    Anecdote(
+        title = "La taza de té (Cap. 4 · I03)",
+        text = "Un visitante llegó a consultar a un maestro, pero en lugar de escuchar hablaba sin detenerse sobre sus propias opiniones. El maestro comenzó a servir té en la taza del visitante y continuó vertiendo incluso cuando ya se desbordaba. «¡Deténgase, ya está llena!», exclamó el visitante. El maestro respondió con serenidad: «Como esta taza, vienes lleno de tus propias certezas; para aprender y conectar con otros, primero hay que abrir espacio para escuchar»."
+    ),
+    Anecdote(
+        title = "Miguel Ángel y el bloque de mármol (Cap. 4 · I03)",
+        text = "Cuenta la tradición que, al contemplar la escultura del David, alguien preguntó a Miguel Ángel cómo había logrado crear tanta belleza a partir de una piedra fría. La enseñanza que transmite este relato es sencilla y profunda: consistió en retirar del bloque todo aquello que sobraba. Al preparar un discurso con el Método AISO, la claridad aparece cuando quitamos los rodeos innecesarios y dejamos visible la idea esencial."
+    ),
+    Anecdote(
+        title = "Thomas Edison y los ensayos de la bombilla (Cap. 4 · I03)",
+        text = "Durante el desarrollo de la bombilla incandescente, Thomas Edison y su equipo probaron numerosos materiales antes de lograr un filamento duradero. En lugar de interpretar cada intento fallido como una derrota personal, lo registraban como información valiosa sobre qué camino descartar. En el entrenamiento AISO («Una toma y un ajuste»), cada práctica no sirve para castigarte, sino para descubrir un ajuste concreto que mejora tu siguiente exposición."
+    ),
+    Anecdote(
+        title = "Steve Jobs en la Universidad de Stanford (Cap. 9)",
+        text = "El 12 de junio de 2005, en su discurso de graduación en la Universidad de Stanford, Steve Jobs no ofreció una lista fría de consejos abstractos, sino tres relatos personales estructurados en tres movimientos: una situación concreta, una dificultad real y la decisión o aprendizaje que surgió de ella. Su intervención demuestra cómo una historia honesta ilumina una idea y permanece en la memoria de la audiencia."
     )
 )
 

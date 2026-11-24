@@ -1,15 +1,22 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -27,74 +34,86 @@ data class RhetoricalQuestion(
 
 val rhetoricalQuestionsLevel1 = listOf(
     RhetoricalQuestion(
-        sentence = "Tus ojos son dos luceros que iluminan mi camino.",
+        sentence = "Tus ojos son dos faros que guían a este equipo en la tormenta.",
         correctFigure = "Metáfora",
         options = listOf("Metáfora", "Símil", "Hipérbole", "Anáfora"),
-        explanation = "Identifica un término real (ojos) con uno imaginario (luceros) sin usar nexos comparativos."
+        explanation = "Metáfora: Identifica un término real (ojos) con uno imaginario (faros) sin usar la palabra «como»."
     ),
     RhetoricalQuestion(
-        sentence = "Lloré un río de lágrimas al despedirse.",
+        sentence = "Lloré un océano entero antes de aprender a hablar sin miedo.",
         correctFigure = "Hipérbole",
         options = listOf("Metáfora", "Anáfora", "Hipérbole", "Símil"),
-        explanation = "Es una exageración evidente de la realidad (llorar un río) para dar mayor impacto al mensaje."
+        explanation = "Hipérbole: Exageración intencionada («un océano entero») para multiplicar la fuerza dramática."
     ),
     RhetoricalQuestion(
-        sentence = "Eres fría como el hielo.",
+        sentence = "Un orador preparado es firme como un roble ante las críticas.",
         correctFigure = "Símil",
         options = listOf("Símil", "Metáfora", "Pregunta Retórica", "Hipérbole"),
-        explanation = "Compara dos términos de forma explícita usando el nexo 'como'."
+        explanation = "Símil: Compara dos elementos explícitamente utilizando el nexo comparativo «como»."
     ),
     RhetoricalQuestion(
-        sentence = "Temprano levantó la muerte el vuelo, temprano madrugó la madrugada.",
+        sentence = "Hoy luchamos por nuestra voz, hoy luchamos por nuestra gente, hoy luchamos por el futuro.",
         correctFigure = "Anáfora",
         options = listOf("Símil", "Anáfora", "Metáfora", "Hipérbole"),
-        explanation = "Consiste en la repetición intencionada de palabras al comienzo de frases o versos (Temprano...)."
+        explanation = "Anáfora: Repetición rítmica de las mismas palabras al inicio de frases sucesivas («Hoy luchamos...»)."
     ),
     RhetoricalQuestion(
-        sentence = "¿Cuántas veces tengo que decirte que prestes atención?",
+        sentence = "¿Acaso vamos a permitir que el miedo decida nuestro destino?",
         correctFigure = "Pregunta Retórica",
         options = listOf("Anáfora", "Hipérbole", "Metáfora", "Pregunta Retórica"),
-        explanation = "Es una pregunta que no espera respuesta, sino que invita a la reflexión o expresa indignación."
+        explanation = "Pregunta Retórica: No espera respuesta verbal, sino despertar la conciencia del público."
+    ),
+    RhetoricalQuestion(
+        sentence = "No preguntes qué puede hacer tu país por ti, pregunta qué puedes hacer tú por tu país.",
+        correctFigure = "Antítesis / Quiasmo",
+        options = listOf("Antítesis / Quiasmo", "Hipérbole", "Símil", "Metáfora"),
+        explanation = "Contrapone dos ideas invirtiendo el orden de las palabras para crear una frase inmortal (J.F. Kennedy)."
+    ),
+    RhetoricalQuestion(
+        sentence = "Llegué, vi y vencí: preparación, coraje y acción.",
+        correctFigure = "Tricolon",
+        options = listOf("Tricolon", "Hipérbole", "Símil", "Pregunta Retórica"),
+        explanation = "Tricolon: Serie de tres elementos o cláusulas paralelas que dan ritmo y contundencia."
     )
-).shuffled()
+)
 
 val rhetoricalQuestionsLevel2 = listOf(
     RhetoricalQuestion(
-        sentence = "Imagen: Tiempo + Dinero",
+        sentence = "«El tiempo es oro en cada presentación ejecutiva»",
         icon = Icons.Default.AttachMoney,
         correctFigure = "Metáfora",
         options = listOf("Hipérbole", "Símil", "Metáfora", "Anáfora"),
-        explanation = "Representa 'El tiempo es oro', identificando el tiempo con el oro para destacar su valor."
+        explanation = "Metáfora visual y verbal: equipara directamente el tiempo con el oro para resaltar su valor."
     ),
     RhetoricalQuestion(
-        sentence = "Imagen: Lágrimas / Agua infinita",
-        icon = Icons.Default.WaterDrop,
+        sentence = "«Lo he repetido un millón de veces en la junta»",
+        icon = Icons.Default.Bolt,
         correctFigure = "Hipérbole",
         options = listOf("Pregunta Retórica", "Hipérbole", "Símil", "Anáfora"),
-        explanation = "Representa 'Llorar un río', una exageración clara para enfatizar tristeza."
+        explanation = "Hipérbole: Exagera la cifra («un millón de veces») para enfatizar urgencia."
     ),
     RhetoricalQuestion(
-        sentence = "Imagen: Copo de Nieve / Hielo",
-        icon = Icons.Default.AcUnit,
+        sentence = "«Un argumento claro como el agua cristalina»",
+        icon = Icons.Default.WaterDrop,
         correctFigure = "Símil",
         options = listOf("Símil", "Metáfora", "Hipérbole", "Anáfora"),
-        explanation = "Representa 'Frío como el hielo', comparando el carácter con la temperatura del hielo."
+        explanation = "Símil: Usa el conector «como» para comparar la claridad del argumento con el agua."
     ),
     RhetoricalQuestion(
-        sentence = "Imagen: Repetición constante",
+        sentence = "«Tengo un sueño hoy... Tengo un sueño mañana...»",
         icon = Icons.Default.Repeat,
         correctFigure = "Anáfora",
         options = listOf("Símil", "Hipérbole", "Metáfora", "Anáfora"),
-        explanation = "El símbolo de repetición ilustra la anáfora, que consiste en repetir palabras al inicio de las frases."
+        explanation = "Anáfora inmortalizada por Martin Luther King Jr.: repite el inicio para crear cadencia emocional."
     ),
     RhetoricalQuestion(
-        sentence = "Imagen: Interrogación sin respuesta",
+        sentence = "«¿Quién de ustedes quiere duplicar sus resultados este año?»",
         icon = Icons.Default.QuestionMark,
         correctFigure = "Pregunta Retórica",
         options = listOf("Anáfora", "Pregunta Retórica", "Símil", "Metáfora"),
-        explanation = "Representa una pregunta que no busca ser respondida, sino enfatizar una idea."
+        explanation = "Pregunta Retórica de apertura: involucra el cerebro del espectador desde el segundo uno."
     )
-).shuffled()
+)
 
 val gameLevels = listOf(
     rhetoricalQuestionsLevel1,
@@ -104,269 +123,345 @@ val gameLevels = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RhetoricalFiguresGameScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
     var currentLevelIndex by remember { mutableIntStateOf(0) }
     var currentQuestionIndex by remember { mutableIntStateOf(0) }
     var lives by remember { mutableIntStateOf(3) }
     var score by remember { mutableIntStateOf(0) }
-    
-    var showIntro by remember { mutableStateOf(true) }
-    var showLevelUp by remember { mutableStateOf(false) }
+    var streak by remember { mutableIntStateOf(0) }
+    var selectedOption by remember { mutableStateOf<String?>(null) }
     var gameState by remember { mutableStateOf("playing") }
-    
-    var showExplanation by remember { mutableStateOf(false) }
-    var lastAnswerCorrect by remember { mutableStateOf(false) }
 
-    val currentLevelQuestions = gameLevels.getOrNull(currentLevelIndex)
-    val currentQuestion = currentLevelQuestions?.getOrNull(currentQuestionIndex)
+    val currentLevelQuestions = gameLevels.getOrNull(currentLevelIndex) ?: emptyList()
+    val currentQuestion = currentLevelQuestions.getOrNull(currentQuestionIndex)
 
-    if (showIntro) {
-        AlertDialog(
-            onDismissRequest = { showIntro = false },
-            title = { Text("Figuras Retóricas", fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    "Las figuras retóricas embellecen tu discurso y lo hacen memorable.\n\n" +
-                    "Nivel 1: Identifica figuras en texto.\n" +
-                    "Nivel 2: Identifica figuras a partir de imágenes simbólicas.\n\n" +
-                    "¡Gana puntos y no pierdas tus vidas!"
-                )
-            },
-            confirmButton = {
-                Button(onClick = { showIntro = false }) {
-                    Text("¡A jugar!")
-                }
-            }
-        )
-    }
-
-    if (showLevelUp) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text("¡Nivel ${currentLevelIndex + 1} Completado!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
-            text = { Text("Has completado las preguntas. ¡Prepárate para las imágenes!") },
-            confirmButton = {
-                Button(onClick = { 
-                    showLevelUp = false
-                    currentLevelIndex++
-                    currentQuestionIndex = 0
-                    if (lives < 3) lives++
-                }) {
-                    Text("Siguiente Nivel")
-                }
-            }
-        )
-    }
-
-    if (gameState == "won") {
-        AlertDialog(
-            onDismissRequest = { onBack() },
-            title = { Text("¡Excelente!", fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50)) },
-            text = { Text("Has completado todas las frases. Puntuación final: $score") },
-            confirmButton = {
-                Button(onClick = { onBack() }) {
-                    Text("Volver")
-                }
-            }
-        )
-    }
-
-    if (gameState == "lost") {
-        AlertDialog(
-            onDismissRequest = { onBack() },
-            title = { Text("Fin del Juego", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error) },
-            text = { Text("Te has quedado sin vidas. ¡Repasa las figuras y vuelve a intentarlo!") },
-            confirmButton = {
-                Button(onClick = { 
-                    currentLevelIndex = 0
-                    currentQuestionIndex = 0
-                    lives = 3
-                    score = 0
-                    gameState = "playing"
-                }) {
-                    Text("Reintentar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { onBack() }) {
-                    Text("Salir")
-                }
-            }
-        )
-    }
-
-    if (showExplanation && currentQuestion != null) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { 
-                Text(
-                    if (lastAnswerCorrect) "¡Correcto!" else "Incorrecto", 
-                    fontWeight = FontWeight.Bold, 
-                    color = if (lastAnswerCorrect) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
-                ) 
-            },
-            text = { 
-                Column {
-                    Text("La respuesta era: ${currentQuestion.correctFigure}", fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(currentQuestion.explanation)
-                }
-            },
-            confirmButton = {
-                Button(onClick = { 
-                    showExplanation = false
-                    if (currentLevelQuestions != null) {
-                        if (currentQuestionIndex < currentLevelQuestions.size - 1) {
-                            currentQuestionIndex++
-                        } else if (currentLevelIndex < gameLevels.size - 1) {
-                            showLevelUp = true
-                        } else {
-                            gameState = "won"
-                        }
-                    }
-                }) {
-                    Text("Continuar")
-                }
-            }
-        )
+    fun nextQuestion() {
+        selectedOption = null
+        if (currentQuestionIndex < currentLevelQuestions.size - 1) {
+            currentQuestionIndex++
+        } else if (currentLevelIndex < gameLevels.size - 1) {
+            currentLevelIndex++
+            currentQuestionIndex = 0
+            if (lives < 3) lives++
+        } else {
+            gameState = "won"
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Figuras Retóricas", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("Figuras Retóricas", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                        Text(
+                            if (currentLevelIndex == 0) "Nivel 1: Maestría Verbal" else "Nivel 2: Simbología y Ritmo",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.78f)
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF0F172A),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
                 )
             )
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    Text(
-                        text = "Puntos: $score",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A))
                     )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // HUD Superior
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        color = Color(0xFF1E293B),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFF334155))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text("Puntos: $score", fontWeight = FontWeight.ExtraBold, color = Color.White)
+                            if (streak > 1) {
+                                Text("🔥 x$streak", fontWeight = FontWeight.Black, color = Color(0xFFFBBF24))
+                            }
+                        }
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        for (i in 1..3) {
+                            Icon(
+                                imageVector = if (i <= lives) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Vida",
+                                tint = if (i <= lives) Color(0xFFEF4444) else Color.Gray,
+                                modifier = Modifier.size(26.dp).padding(horizontal = 2.dp)
+                            )
+                        }
+                    }
                 }
-                
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    for (i in 1..3) {
-                        Icon(
-                            imageVector = if (i <= lives) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Vida",
-                            tint = Color.Red,
-                            modifier = Modifier.size(28.dp).padding(horizontal = 2.dp)
-                        )
+
+                // Barra de Progreso
+                val progress = if (currentLevelQuestions.isNotEmpty()) {
+                    (currentQuestionIndex + 1).toFloat() / currentLevelQuestions.size.toFloat()
+                } else 0f
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = Color(0xFF8B5CF6),
+                    trackColor = Color(0xFF1E293B)
+                )
+
+                if (currentQuestion != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                        border = BorderStroke(1.5.dp, Color(0xFF8B5CF6))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .padding(22.dp)
+                                .fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "PREGUNTA ${currentQuestionIndex + 1} DE ${currentLevelQuestions.size}",
+                                color = Color(0xFFC4B5FD),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            if (currentQuestion.icon != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(76.dp)
+                                        .background(Color(0xFF8B5CF6).copy(alpha = 0.2f), RoundedCornerShape(18.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = currentQuestion.icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(44.dp),
+                                        tint = Color(0xFFC4B5FD)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+
+                            Text(
+                                text = "«${currentQuestion.sentence}»",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 28.sp
+                            )
+                        }
+                    }
+
+                    // Opciones con coloración inmediata
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        currentQuestion.options.forEach { option ->
+                            val isAnswered = selectedOption != null
+                            val isThisSelected = selectedOption == option
+                            val isCorrectOption = option == currentQuestion.correctFigure
+
+                            val bgColor = when {
+                                !isAnswered -> Color(0xFF1E293B)
+                                isCorrectOption -> Color(0xFF064E3B)
+                                isThisSelected -> Color(0xFF7F1D1D)
+                                else -> Color(0xFF0F172A)
+                            }
+                            val borderColor = when {
+                                !isAnswered -> Color(0xFF334155)
+                                isCorrectOption -> Color(0xFF10B981)
+                                isThisSelected -> Color(0xFFF87171)
+                                else -> Color(0xFF1E293B)
+                            }
+
+                            Surface(
+                                onClick = {
+                                    if (selectedOption == null && gameState == "playing") {
+                                        selectedOption = option
+                                        if (isCorrectOption) {
+                                            streak++
+                                            score += 20 + (streak * 5)
+                                        } else {
+                                            streak = 0
+                                            lives--
+                                            if (lives <= 0) {
+                                                gameState = "lost"
+                                            }
+                                        }
+                                    }
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                color = bgColor,
+                                border = BorderStroke(1.5.dp, borderColor),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(54.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = option,
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (isAnswered) {
+                                        if (isCorrectOption) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF34D399))
+                                        } else if (isThisSelected) {
+                                            Icon(Icons.Default.Cancel, contentDescription = null, tint = Color(0xFFF87171))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Explicación Inline + Botón Continuar Inmediato
+                    if (selectedOption != null && gameState == "playing") {
+                        val isCorrect = selectedOption == currentQuestion.correctFigure
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isCorrect) Color(0xFF064E3B) else Color(0xFF450A0A)
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isCorrect) Color(0xFF10B981) else Color(0xFFF87171)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = if (isCorrect) "✅ ¡Exacto! ${currentQuestion.correctFigure}" else "❌ Era: ${currentQuestion.correctFigure}",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 15.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = currentQuestion.explanation,
+                                    color = Color(0xFFE2E8F0),
+                                    fontSize = 13.sp,
+                                    lineHeight = 18.sp
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Button(
+                                    onClick = { nextQuestion() },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isCorrect) Color(0xFF10B981) else Color(0xFFEF4444)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                                ) {
+                                    Text("Siguiente Pregunta", fontWeight = FontWeight.ExtraBold)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                                }
+                            }
+                        }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Text(
-                text = "Nivel ${currentLevelIndex + 1} - Pregunta ${currentQuestionIndex + 1} de ${currentLevelQuestions?.size ?: 0}",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.outline
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            if (currentQuestion != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+
+            if (gameState == "won" || gameState == "lost") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.85f))
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                        border = BorderStroke(
+                            1.5.dp,
+                            if (gameState == "won") Color(0xFF10B981) else Color(0xFFEF4444)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        if (currentQuestion.icon != null) {
-                            Box(
-                                modifier = Modifier
-                                    .size(120.dp)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = currentQuestion.icon,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(80.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
-                        
-                        Text(
-                            text = if (currentQuestion.icon != null) currentQuestion.sentence else "\"${currentQuestion.sentence}\"",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                Text(
-                    text = "¿Qué figura retórica es?",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    currentQuestion.options.forEach { option ->
-                        Button(
-                            onClick = {
-                                if (option == currentQuestion.correctFigure) {
-                                    score += 20
-                                    lastAnswerCorrect = true
-                                } else {
-                                    lives--
-                                    lastAnswerCorrect = false
-                                    if (lives <= 0) {
-                                        gameState = "lost"
-                                    }
-                                }
-                                if (gameState != "lost") {
-                                    showExplanation = true
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            shape = RoundedCornerShape(12.dp)
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Text(if (gameState == "won") "🏆" else "📚", fontSize = 48.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = option,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold
+                                text = if (gameState == "won") "¡Maestro de la Retórica!" else "¡Fin de la Partida!",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Puntuación Final: $score pts",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFBBF24)
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Button(
+                                onClick = {
+                                    currentLevelIndex = 0
+                                    currentQuestionIndex = 0
+                                    lives = 3
+                                    score = 0
+                                    streak = 0
+                                    selectedOption = null
+                                    gameState = "playing"
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5CF6)),
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth().height(52.dp)
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Jugar de Nuevo", fontWeight = FontWeight.ExtraBold)
+                            }
                         }
                     }
                 }

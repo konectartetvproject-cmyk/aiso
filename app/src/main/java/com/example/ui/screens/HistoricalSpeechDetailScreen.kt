@@ -1,11 +1,6 @@
 package com.example.ui.screens
 
-import android.app.Activity
-import android.content.Intent
-import android.speech.RecognizerIntent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,14 +9,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.util.rememberInAppSpeechController
 import com.example.viewmodel.HistoricalSpeechState
 import com.example.viewmodel.HistoricalSpeechViewModel
 
@@ -34,16 +33,15 @@ fun HistoricalSpeechDetailScreen(
     val speech by viewModel.currentSpeech.collectAsState()
     val state by viewModel.state.collectAsState()
 
-    val speechRecognizerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val data = result.data
-            val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            val spokenText = results?.get(0) ?: ""
-            viewModel.analyzeReading(spokenText)
+    val speechController = rememberInAppSpeechController(
+        language = "es-ES",
+        continuous = true,
+        onFinalized = { spokenText ->
+            if (spokenText.isNotBlank()) {
+                viewModel.analyzeReading(spokenText)
+            }
         }
-    }
+    )
 
     if (speech == null) {
         LaunchedEffect(Unit) { onBack() }
@@ -55,7 +53,10 @@ fun HistoricalSpeechDetailScreen(
             TopAppBar(
                 title = { Text("Práctica Histórica", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        speechController.cancel()
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
@@ -88,8 +89,8 @@ fun HistoricalSpeechDetailScreen(
                 fontStyle = FontStyle.Italic,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            
+            Spacer(modifier = Modifier.height(12.dp))
+
             Text(
                 text = speech!!.context,
                 style = MaterialTheme.typography.bodyMedium,
@@ -97,37 +98,110 @@ fun HistoricalSpeechDetailScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // El discurso histórico permanece 100% visible mientras el usuario lo declama
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                border = if (speechController.isListening) {
+                    BorderStroke(2.dp, Color(0xFF10B981))
+                } else null
             ) {
-                Text(
-                    text = speech!!.excerpt,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(24.dp),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (speechController.isListening) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFD1FAE5),
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        ) {
+                            Text(
+                                text = "🎙️ Micrófono activo: lee el discurso en pantalla",
+                                color = Color(0xFF065F46),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = speech!!.excerpt,
+                        style = MaterialTheme.typography.bodyLarge,
+                        lineHeight = 26.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(32.dp))
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             when (val currentState = state) {
                 is HistoricalSpeechState.Idle -> {
-                    Button(
-                        onClick = {
-                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-ES")
-                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Lee el fragmento en voz alta...")
+                    if (!speechController.isListening) {
+                        Button(
+                            onClick = { speechController.start(resetText = true) },
+                            modifier = Modifier
+                                .fillMaxWidth(0.85f)
+                                .height(58.dp),
+                            shape = RoundedCornerShape(30.dp)
+                        ) {
+                            Icon(Icons.Default.Mic, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Iniciar Lectura Escénica", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "El texto permanecerá visible mientras hablas.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Button(
+                            onClick = { speechController.stopAndFinish() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                            modifier = Modifier
+                                .fillMaxWidth(0.85f)
+                                .height(58.dp),
+                            shape = RoundedCornerShape(30.dp)
+                        ) {
+                            Icon(Icons.Default.Stop, contentDescription = null, tint = Color.White)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Detener y Evaluar Discurso", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+
+                        if (speechController.liveText.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Text(
+                                        text = "Escuchando en vivo:",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = speechController.liveText,
+                                        fontSize = 13.sp,
+                                        fontStyle = FontStyle.Italic,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
-                            speechRecognizerLauncher.launch(intent)
-                        },
-                        modifier = Modifier.height(64.dp),
-                        shape = RoundedCornerShape(32.dp)
-                    ) {
-                        Icon(Icons.Default.Mic, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Tocar para Recitar", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
                 is HistoricalSpeechState.Analyzing -> {
